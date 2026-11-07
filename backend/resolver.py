@@ -19,9 +19,10 @@ app.add_middleware(
 )
 
 ALLOWED_HOST_SUFFIXES = (
-    "youtube.com", "youtu.be", "m.youtube.com",
-    "facebook.com", "fb.watch", "m.facebook.com",
-    "instagram.com", "threads.net",
+    "youtube.com", "youtu.be",
+    "facebook.com", "fb.com", "fb.watch",
+    "instagram.com",
+    "threads.net", "threads.com",
 )
 
 def validate_url(raw: str) -> str:
