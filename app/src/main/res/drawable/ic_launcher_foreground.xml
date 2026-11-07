@@ -3,4 +3,4 @@
     <path android:fillColor="#FFFFFF" android:pathData="M46,35L72,51L46,67Z"/>
     <path android:fillColor="#08A66A" android:pathData="M70,63a17,17 0,1 0,0 34a17,17 0,1 0,0 -34"/>
     <path android:fillColor="#FFFFFF" android:pathData="M68,68h4v11h7L70,91L61,79h7z"/>
-  </vector>
+</vector>
