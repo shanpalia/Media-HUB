@@ -7,6 +7,13 @@ import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
 import android.webkit.URLUtil
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import org.json.JSONObject
+import java.util.concurrent.TimeUnit
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
@@ -86,6 +93,7 @@ class MainActivity : ComponentActivity() {
  var downloads by remember { mutableStateOf(emptyList<DownloadItem>()) }
  var selectedFile by remember { mutableStateOf<DownloadItem?>(null) }
  val context = LocalContext.current
+ val scope = rememberCoroutineScope()
  fun refresh() { downloads = readDownloads(context) }
  LaunchedEffect(selected) { refresh() }
 
@@ -97,7 +105,7 @@ class MainActivity : ComponentActivity() {
   }
  }) { padding ->
   when (selected) {
-   "Home" -> HomePage(url, { url = it }, { notice = startDownload(context, url); refresh() }, downloads, { selected = "Downloads" }, notice, Modifier.padding(padding))
+   "Home" -> HomePage(url, { url = it }, { scope.launch { notice = "Resolving..."; notice = withContext(Dispatchers.IO) { resolveAndDownload(context, url) }; refresh() } }, downloads, { selected = "Downloads" }, notice, Modifier.padding(padding))
    "Downloads", "History" -> DownloadsPage(downloads, selected == "History", { item -> selectedFile = item; selected = "Player" }, Modifier.padding(padding))
    "Player" -> PlayerPage(downloads, selectedFile, { selectedFile = it }, Modifier.padding(padding))
    else -> SettingsPage(Modifier.padding(padding))
@@ -235,21 +243,29 @@ class MainActivity : ComponentActivity() {
  }
 }
 
-private fun startDownload(context: Context, raw: String): String {
+private fun resolveAndDownload(context: Context, raw: String): String {
  val value = raw.trim()
- if (value.isBlank()) return "पहले video link दर्ज करें।"
- val uri = try { Uri.parse(value) } catch (_: Exception) { return "Link सही नहीं है।" }
- if (uri.scheme != "https" && uri.scheme != "http") return "केवल HTTP/HTTPS link समर्थित है।"
- if (!uri.path.orEmpty().lowercase().endsWith(".mp4")) return "यह direct MP4 link नहीं है। Social post URL extract नहीं किया जाएगा।"
+ if (value.isBlank()) return "Enter a video link first."
+ val parsed = Uri.parse(value)
+ if (parsed.scheme != "https" && parsed.scheme != "http") return "Only public HTTP/HTTPS links are supported."
  return try {
-  val filename = URLUtil.guessFileName(value, null, "video/mp4")
-  val request = DownloadManager.Request(uri).setTitle(filename).setDescription("Media HUB download").setMimeType("video/mp4")
+  val client = OkHttpClient.Builder().callTimeout(150, TimeUnit.SECONDS).build()
+  val infoUrl = Uri.parse("https://media-hub-resolver.onrender.com/info").buildUpon().appendQueryParameter("url", value).build().toString()
+  val response = client.newCall(Request.Builder().url(infoUrl).build()).execute()
+  val body = response.body?.string().orEmpty()
+  if (!response.isSuccessful) return "Could not resolve: " + JSONObject(body).optString("detail", "Unsupported or unavailable video")
+  val info = JSONObject(body)
+  val title = info.optString("title", "Media HUB Video")
+  if (info.optString("download_url").isBlank()) return "No downloadable video found for this link."
+  val downloadUri = Uri.parse("https://media-hub-resolver.onrender.com/download").buildUpon().appendQueryParameter("url", value).build()
+  val filename = URLUtil.guessFileName(title + ".mp4", null, "video/mp4")
+  val request = DownloadManager.Request(downloadUri).setTitle(title).setDescription("Media HUB video download").setMimeType("video/mp4")
    .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-   .setDestinationInExternalPublicDir(Environment.DIRECTORY_MOVIES, "MediaHUB/$filename")
+   .setDestinationInExternalPublicDir(Environment.DIRECTORY_MOVIES, "MediaHUB/" + filename)
    .setAllowedOverMetered(true).setAllowedOverRoaming(false)
   (context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager).enqueue(request)
-  "Download queue में जोड़ दिया गया। Notification में progress देखें।"
- } catch (e: Exception) { "Download शुरू नहीं हुआ: ${e.localizedMessage ?: "unknown error"}" }
+  "Found: " + title + ". Download started; check notification."
+ } catch (e: Exception) { "Download error: " + (e.localizedMessage ?: "Resolver server unavailable") }
 }
 private fun readDownloads(context: Context): List<DownloadItem> {
  val manager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
