@@ -14,6 +14,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.json.JSONObject
 import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.delay
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
@@ -62,8 +63,10 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable private fun MediaHubRoot(sharedText: String) {
+ var showSplash by remember { mutableStateOf(true) }
+ LaunchedEffect(Unit) { delay(1400); showSplash = false }
  MaterialTheme(colorScheme = lightColorScheme(primary = Mint, secondary = DeepMint, background = Color(0xFFF8FCFA), surface = Color.White, onSurface = Ink)) {
-  MainShell(sharedText)
+  if (showSplash) SplashScreen() else MainShell(sharedText)
  }
 }
 
@@ -117,23 +120,23 @@ class MainActivity : ComponentActivity() {
  LazyColumn(modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 18.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
   item {
    Row(Modifier.fillMaxWidth().background(Color.White).padding(horizontal = 16.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-    BrandMark(48); Spacer(Modifier.width(10.dp))
+    BrandMark(64); Spacer(Modifier.width(14.dp))
     Column(Modifier.weight(1f)) {
-     Row(verticalAlignment = Alignment.CenterVertically) { Text("Media ", fontSize = 23.sp, fontWeight = FontWeight.Black, color = Ink); Text("HUB", fontSize = 23.sp, fontWeight = FontWeight.Black, color = DeepMint) }
-     Text("Video Downloader", color = DeepMint, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-     Text("BY PALIAAPK HUB", color = Muted, fontSize = 8.sp, letterSpacing = 1.4.sp)
+     Row(verticalAlignment = Alignment.CenterVertically) { Text("Media ", fontSize = 27.sp, fontWeight = FontWeight.Black, color = Ink); Text("HUB", fontSize = 27.sp, fontWeight = FontWeight.Black, color = DeepMint) }
+     Text("Video Downloader", color = DeepMint, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+     Text("BY PALIAAPK HUB", color = Muted, fontSize = 10.sp, letterSpacing = 1.8.sp)
     }
-    Icon(Icons.Default.NotificationsNone, null, tint = Ink, modifier = Modifier.size(25.dp)); Spacer(Modifier.width(12.dp))
-    Icon(Icons.Default.AccountCircle, null, tint = DeepMint, modifier = Modifier.size(30.dp))
+    Icon(Icons.Default.NotificationsNone, null, tint = Ink, modifier = Modifier.size(27.dp)); Spacer(Modifier.width(14.dp))
+    Icon(Icons.Default.AccountCircle, null, tint = DeepMint, modifier = Modifier.size(34.dp))
    }
   }
   item {
    Row(Modifier.fillMaxWidth().background(PaleMint).padding(horizontal = 20.dp, vertical = 18.dp), verticalAlignment = Alignment.CenterVertically) {
     Column(Modifier.weight(1f)) {
-     Text("Download Videos From\nYour Favorite Platforms", fontSize = 22.sp, lineHeight = 27.sp, fontWeight = FontWeight.ExtraBold, color = Ink)
-     Spacer(Modifier.height(7.dp)); Text("Videos  •  Reels  •  Shorts  •  More", color = Muted, fontSize = 13.sp)
+     Text("Download Videos From\nYour Favorite Platforms", fontSize = 25.sp, lineHeight = 31.sp, fontWeight = FontWeight.ExtraBold, color = Ink)
+     Spacer(Modifier.height(7.dp)); Text("Videos  •  Reels  •  Shorts  •  More", color = Muted, fontSize = 14.sp)
     }
-    Icon(Icons.Default.VideoLibrary, null, tint = DeepMint, modifier = Modifier.size(78.dp))
+    BrandMark(88)
    }
   }
   item {
@@ -154,21 +157,6 @@ class MainActivity : ComponentActivity() {
    }
   }
   item {
-   Row(Modifier.fillMaxWidth().padding(horizontal = 14.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-    FeatureTile("↓", "Batch\nDownload", Modifier.weight(1f))
-    FeatureTile("HD", "Choose\nQuality", Modifier.weight(1f))
-    FeatureTile("ϟ", "Fast\nDownload", Modifier.weight(1f))
-    FeatureTile("▶", "Built-in\nPlayer", Modifier.weight(1f))
-   }
-  }
-  item {
-   Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp).background(PaleMint, RoundedCornerShape(20.dp)).padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
-    Text("👑", fontSize = 28.sp); Spacer(Modifier.width(10.dp))
-    Column(Modifier.weight(1f)) { Text("Media HUB Pro", fontWeight = FontWeight.ExtraBold, fontSize = 17.sp); Text("Ad Free  •  More Features", fontSize = 11.sp, color = Muted) }
-    Text("Coming Soon", color = DeepMint, fontWeight = FontWeight.Bold, fontSize = 11.sp)
-   }
-  }
-  item {
    Row(Modifier.fillMaxWidth().padding(horizontal = 18.dp), verticalAlignment = Alignment.CenterVertically) {
     Icon(Icons.Default.AccessTime, null); Spacer(Modifier.width(8.dp)); Text("Recent Downloads", fontWeight = FontWeight.Bold, fontSize = 18.sp, modifier = Modifier.weight(1f))
     Text("View All  ›", color = DeepMint, fontWeight = FontWeight.Bold, modifier = Modifier.clickable { onAll() })
@@ -176,7 +164,7 @@ class MainActivity : ComponentActivity() {
   }
   if (downloads.isEmpty()) item { Text("अभी कोई डाउनलोड नहीं है। अपना अधिकृत direct MP4 link ऊपर paste करें।", color = Muted, fontSize = 12.sp, modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 8.dp), textAlign = TextAlign.Center) }
   else items(downloads.take(5), key = { it.id }) { DownloadRow(it) }
-  item { Text("Social post link direct MP4 file नहीं होता। यह version direct MP4 URLs ही डाउनलोड करता है और DRM/platform restrictions bypass नहीं करता।", color = Muted, fontSize = 11.sp, modifier = Modifier.padding(horizontal = 18.dp)) }
+  item { Text("केवल सार्वजनिक और अधिकृत वीडियो लिंक समर्थित हैं। Private, login-only और DRM-protected वीडियो उपलब्ध नहीं होंगे।", color = Muted, fontSize = 11.sp, modifier = Modifier.padding(horizontal = 18.dp)) }
  }
 }
 
