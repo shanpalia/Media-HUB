@@ -52,6 +52,7 @@ private val Ink = Color(0xFF17231F)
 private val Muted = Color(0xFF68766F)
 
 data class DownloadItem(val id: Long, val title: String, val status: String, val uri: Uri?)
+data class ResolvedMedia(val title: String, val thumbnail: String, val duration: String, val extractor: String, val formats: List<String>)
 
 class MainActivity : ComponentActivity() {
  override fun onCreate(savedInstanceState: Bundle?) {
@@ -93,13 +94,14 @@ class MainActivity : ComponentActivity() {
  var selected by remember { mutableStateOf("Home") }
  var url by remember { mutableStateOf(sharedText) }
  var notice by remember { mutableStateOf("") }
+ var loading by remember { mutableStateOf(false) }
+ var resolved by remember { mutableStateOf<ResolvedMedia?>(null) }
  var downloads by remember { mutableStateOf(emptyList<DownloadItem>()) }
  var selectedFile by remember { mutableStateOf<DownloadItem?>(null) }
  val context = LocalContext.current
  val scope = rememberCoroutineScope()
  fun refresh() { downloads = readDownloads(context) }
  LaunchedEffect(selected) { refresh() }
-
  Scaffold(containerColor = Color(0xFFF8FCFA), bottomBar = {
   NavigationBar(containerColor = Color.White) {
    listOf(Triple("Home", Icons.Default.Home, "Home"), Triple("Downloads", Icons.Default.Download, "Downloads"), Triple("Player", Icons.Default.PlayCircle, "Player"), Triple("History", Icons.Default.History, "History"), Triple("Settings", Icons.Default.Settings, "Settings")).forEach { (label, icon, _) ->
@@ -108,7 +110,22 @@ class MainActivity : ComponentActivity() {
   }
  }) { padding ->
   when (selected) {
-   "Home" -> HomePage(url, { url = it }, { scope.launch { notice = "Resolving..."; notice = withContext(Dispatchers.IO) { resolveAndDownload(context, url) }; refresh() } }, downloads, { selected = "Downloads" }, notice, Modifier.padding(padding))
+   "Home" -> HomePage(url, { url = it; resolved = null; notice = "" }, {
+    scope.launch {
+     loading = true; notice = "Loading post details..."
+     val result = withContext(Dispatchers.IO) { resolveMedia(url) }
+     resolved = result.first
+     notice = result.second
+     loading = false
+    }
+   }, { media ->
+    scope.launch {
+     loading = true
+     notice = withContext(Dispatchers.IO) { startMediaDownload(context, url, media.title) }
+     loading = false
+     refresh()
+    }
+   }, downloads, { selected = "Downloads" }, resolved, loading, notice, Modifier.padding(padding))
    "Downloads", "History" -> DownloadsPage(downloads, selected == "History", { item -> selectedFile = item; selected = "Player" }, Modifier.padding(padding))
    "Player" -> PlayerPage(downloads, selectedFile, { selectedFile = it }, Modifier.padding(padding))
    else -> SettingsPage(Modifier.padding(padding))
@@ -116,55 +133,84 @@ class MainActivity : ComponentActivity() {
  }
 }
 
-@Composable private fun HomePage(url: String, onUrl: (String) -> Unit, onDownload: () -> Unit, downloads: List<DownloadItem>, onAll: () -> Unit, notice: String, modifier: Modifier) {
+@Composable private fun HomePage(url: String, onUrl: (String) -> Unit, onLoad: () -> Unit, onDownload: (ResolvedMedia) -> Unit, downloads: List<DownloadItem>, onAll: () -> Unit, media: ResolvedMedia?, loading: Boolean, notice: String, modifier: Modifier) {
  LazyColumn(modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 18.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
   item {
    Row(Modifier.fillMaxWidth().background(Color.White).padding(horizontal = 16.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-    BrandMark(64); Spacer(Modifier.width(14.dp))
+    BrandMark(58); Spacer(Modifier.width(12.dp))
     Column(Modifier.weight(1f)) {
-     Row(verticalAlignment = Alignment.CenterVertically) { Text("Media ", fontSize = 27.sp, fontWeight = FontWeight.Black, color = Ink); Text("HUB", fontSize = 27.sp, fontWeight = FontWeight.Black, color = DeepMint) }
-     Text("Video Downloader", color = DeepMint, fontSize = 15.sp, fontWeight = FontWeight.Bold)
-     Text("BY PALIAAPK HUB", color = Muted, fontSize = 10.sp, letterSpacing = 1.8.sp)
+     Row(verticalAlignment = Alignment.CenterVertically) { Text("Media ", fontSize = 25.sp, fontWeight = FontWeight.Black, color = Ink); Text("HUB", fontSize = 25.sp, fontWeight = FontWeight.Black, color = DeepMint) }
+     Text("Threads & Social Video Downloader", color = DeepMint, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+     Text("BY PALIAAPK HUB", color = Muted, fontSize = 9.sp, letterSpacing = 1.5.sp)
     }
-    Icon(Icons.Default.NotificationsNone, null, tint = Ink, modifier = Modifier.size(27.dp)); Spacer(Modifier.width(14.dp))
-    Icon(Icons.Default.AccountCircle, null, tint = DeepMint, modifier = Modifier.size(34.dp))
+    Icon(Icons.Default.AccountCircle, null, tint = DeepMint, modifier = Modifier.size(32.dp))
    }
   }
   item {
-   Row(Modifier.fillMaxWidth().background(PaleMint).padding(horizontal = 20.dp, vertical = 18.dp), verticalAlignment = Alignment.CenterVertically) {
-    Column(Modifier.weight(1f)) {
-     Text("Download Videos From\nYour Favorite Platforms", fontSize = 25.sp, lineHeight = 31.sp, fontWeight = FontWeight.ExtraBold, color = Ink)
-     Spacer(Modifier.height(7.dp)); Text("Videos  •  Reels  •  Shorts  •  More", color = Muted, fontSize = 14.sp)
+   Column(Modifier.fillMaxWidth().background(PaleMint).padding(horizontal = 20.dp, vertical = 24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+    Text("Download Threads Videos", fontSize = 25.sp, lineHeight = 30.sp, fontWeight = FontWeight.ExtraBold, color = Ink, textAlign = TextAlign.Center)
+    Spacer(Modifier.height(8.dp))
+    Text("Save public videos from Threads in a few simple steps.", color = Muted, fontSize = 14.sp, textAlign = TextAlign.Center)
+    Spacer(Modifier.height(14.dp))
+    Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+     FeatureTile("1", "Paste link", Modifier.weight(1f))
+     FeatureTile("2", "Load post", Modifier.weight(1f))
+     FeatureTile("3", "Download", Modifier.weight(1f))
     }
-    BrandMark(88)
    }
   }
   item {
-   Column(Modifier.padding(horizontal = 16.dp).background(Color.White, RoundedCornerShape(22.dp)).padding(14.dp)) {
-    OutlinedTextField(value = url, onValueChange = onUrl, modifier = Modifier.fillMaxWidth().heightIn(min = 58.dp), placeholder = { Text("Paste video link here...", fontSize = 14.sp) }, leadingIcon = { Icon(Icons.Default.Link, null, tint = DeepMint) }, trailingIcon = { if (url.isNotBlank()) IconButton(onClick = { onUrl("") }) { Icon(Icons.Default.Close, "Clear") } }, shape = RoundedCornerShape(18.dp), singleLine = true, colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Mint, unfocusedBorderColor = Mint, focusedContainerColor = Color.White, unfocusedContainerColor = Color.White))
+   Column(Modifier.padding(horizontal = 16.dp).background(Color.White, RoundedCornerShape(22.dp)).padding(16.dp)) {
+    Text("Paste Threads link", fontWeight = FontWeight.Bold, fontSize = 17.sp, color = Ink)
+    Spacer(Modifier.height(10.dp))
+    OutlinedTextField(value = url, onValueChange = onUrl, modifier = Modifier.fillMaxWidth(), placeholder = { Text("https://www.threads.com/@.../post/...") }, leadingIcon = { Icon(Icons.Default.Link, null, tint = DeepMint) }, trailingIcon = { if (url.isNotBlank()) IconButton(onClick = { onUrl("") }) { Icon(Icons.Default.Close, "Clear") } }, shape = RoundedCornerShape(16.dp), colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Mint, unfocusedBorderColor = Color(0xFFDCE8E2), focusedContainerColor = Color.White, unfocusedContainerColor = Color.White))
     Spacer(Modifier.height(12.dp))
-    Button(onClick = onDownload, modifier = Modifier.fillMaxWidth().height(54.dp), shape = RoundedCornerShape(30.dp), colors = ButtonDefaults.buttonColors(containerColor = DeepMint)) { Icon(Icons.Default.Download, null); Spacer(Modifier.width(10.dp)); Text("Download", fontSize = 18.sp, fontWeight = FontWeight.Bold) }
-    if (notice.isNotBlank()) Text(notice, color = DeepMint, fontSize = 12.sp, modifier = Modifier.padding(top = 8.dp))
+    Button(onClick = onLoad, enabled = !loading && url.isNotBlank(), modifier = Modifier.fillMaxWidth().height(54.dp), shape = RoundedCornerShape(16.dp), colors = ButtonDefaults.buttonColors(containerColor = DeepMint)) {
+     if (loading) CircularProgressIndicator(Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp) else Icon(Icons.Default.Search, null)
+     Spacer(Modifier.width(9.dp)); Text("Load Videos", fontSize = 17.sp, fontWeight = FontWeight.Bold)
+    }
+    if (notice.isNotBlank()) Text(notice, color = DeepMint, fontSize = 12.sp, modifier = Modifier.padding(top = 10.dp))
    }
   }
-  item { Text("Supported Platforms", fontWeight = FontWeight.Bold, fontSize = 18.sp, modifier = Modifier.padding(horizontal = 18.dp)) }
+  if (media != null) item {
+   Column(Modifier.padding(horizontal = 16.dp).fillMaxWidth().background(Color.White, RoundedCornerShape(20.dp)).padding(16.dp)) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+     Box(Modifier.size(46.dp).background(PaleMint, RoundedCornerShape(12.dp)), contentAlignment = Alignment.Center) { Icon(Icons.Default.VideoLibrary, null, tint = DeepMint, modifier = Modifier.size(27.dp)) }
+     Spacer(Modifier.width(12.dp))
+     Column(Modifier.weight(1f)) {
+      Text("Post found", color = DeepMint, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+      Text(media.title, fontWeight = FontWeight.Bold, fontSize = 16.sp, maxLines = 2)
+     }
+    }
+    Spacer(Modifier.height(12.dp))
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+     AssistChip(onClick = {}, label = { Text(media.extractor.ifBlank { "Social video" }) }, leadingIcon = { Icon(Icons.Default.Public, null) })
+     if (media.duration.isNotBlank()) AssistChip(onClick = {}, label = { Text(media.duration) }, leadingIcon = { Icon(Icons.Default.Schedule, null) })
+    }
+    Text("Available video formats: " + media.formats.size, color = Muted, fontSize = 12.sp)
+    Spacer(Modifier.height(12.dp))
+    Button(onClick = { onDownload(media) }, enabled = !loading, modifier = Modifier.fillMaxWidth().height(52.dp), shape = RoundedCornerShape(16.dp), colors = ButtonDefaults.buttonColors(containerColor = Mint)) {
+     Icon(Icons.Default.Download, null); Spacer(Modifier.width(8.dp)); Text("Download Video", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+    }
+   }
+  }
   item {
-   Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-    PlatformCard("f", "Facebook", "Videos", Modifier.weight(1f))
-    PlatformCard("◎", "Instagram", "Reels & Videos", Modifier.weight(1f))
-    PlatformCard("@", "Threads", "Videos", Modifier.weight(1f))
-    PlatformCard("▶", "YouTube", "Official options", Modifier.weight(1f))
+   Text("How it works", fontWeight = FontWeight.Bold, fontSize = 18.sp, modifier = Modifier.padding(horizontal = 18.dp))
+   Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    FeatureTile("↗", "Copy public post link", Modifier.weight(1f))
+    FeatureTile("⌕", "Tap Load Videos", Modifier.weight(1f))
+    FeatureTile("↓", "Save to phone", Modifier.weight(1f))
    }
   }
   item {
    Row(Modifier.fillMaxWidth().padding(horizontal = 18.dp), verticalAlignment = Alignment.CenterVertically) {
-    Icon(Icons.Default.AccessTime, null); Spacer(Modifier.width(8.dp)); Text("Recent Downloads", fontWeight = FontWeight.Bold, fontSize = 18.sp, modifier = Modifier.weight(1f))
+    Text("Recent Downloads", fontWeight = FontWeight.Bold, fontSize = 18.sp, modifier = Modifier.weight(1f))
     Text("View All  ›", color = DeepMint, fontWeight = FontWeight.Bold, modifier = Modifier.clickable { onAll() })
    }
   }
-  if (downloads.isEmpty()) item { Text("अभी कोई डाउनलोड नहीं है। अपना अधिकृत direct MP4 link ऊपर paste करें।", color = Muted, fontSize = 12.sp, modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 8.dp), textAlign = TextAlign.Center) }
-  else items(downloads.take(5), key = { it.id }) { DownloadRow(it) }
-  item { Text("केवल सार्वजनिक और अधिकृत वीडियो लिंक समर्थित हैं। Private, login-only और DRM-protected वीडियो उपलब्ध नहीं होंगे।", color = Muted, fontSize = 11.sp, modifier = Modifier.padding(horizontal = 18.dp)) }
+  if (downloads.isEmpty()) item { Text("Your downloaded videos will appear here.", color = Muted, fontSize = 12.sp, modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 8.dp), textAlign = TextAlign.Center) }
+  else items(downloads.take(4), key = { it.id }) { DownloadRow(it) }
+  item { Text("Only public and authorized content is supported. Private, login-only and DRM-protected posts cannot be downloaded.", color = Muted, fontSize = 11.sp, modifier = Modifier.padding(horizontal = 18.dp)) }
  }
 }
 
@@ -231,29 +277,42 @@ class MainActivity : ComponentActivity() {
  }
 }
 
-private fun resolveAndDownload(context: Context, raw: String): String {
+private fun resolveMedia(raw: String): Pair<ResolvedMedia?, String> {
  val value = raw.trim()
- if (value.isBlank()) return "Enter a video link first."
+ if (value.isBlank()) return null to "Paste a post link first."
  val parsed = Uri.parse(value)
- if (parsed.scheme != "https" && parsed.scheme != "http") return "Only public HTTP/HTTPS links are supported."
+ if ((parsed.scheme != "https" && parsed.scheme != "http") || parsed.host.isNullOrBlank()) return null to "Enter a valid public post URL."
  return try {
-  val client = OkHttpClient.Builder().callTimeout(150, TimeUnit.SECONDS).build()
+  val client = OkHttpClient.Builder().callTimeout(100, TimeUnit.SECONDS).build()
   val infoUrl = Uri.parse("https://media-hub-resolver.onrender.com/info").buildUpon().appendQueryParameter("url", value).build().toString()
-  val response = client.newCall(Request.Builder().url(infoUrl).build()).execute()
-  val body = response.body?.string().orEmpty()
-  if (!response.isSuccessful) return "Could not resolve: " + JSONObject(body).optString("detail", "Unsupported or unavailable video")
-  val info = JSONObject(body)
-  val title = info.optString("title", "Media HUB Video")
-  if (info.optString("download_url").isBlank()) return "No downloadable video found for this link."
-  val downloadUri = Uri.parse("https://media-hub-resolver.onrender.com/download").buildUpon().appendQueryParameter("url", value).build()
+  client.newCall(Request.Builder().url(infoUrl).build()).execute().use { response ->
+   val body = response.body?.string().orEmpty()
+   if (!response.isSuccessful) return null to "Could not load post: " + runCatching { JSONObject(body).optString("detail") }.getOrDefault("Post unavailable or unsupported")
+   val info = JSONObject(body)
+   val formats = mutableListOf<String>()
+   val array = info.optJSONArray("formats")
+   if (array != null) for (i in 0 until array.length()) {
+    val f = array.optJSONObject(i) ?: continue
+    val h = f.optInt("height", 0)
+    val ext = f.optString("ext", "")
+    formats.add((if (h > 0) "${h}p" else "Video") + if (ext.isNotBlank()) " · " + ext else "")
+   }
+   ResolvedMedia(info.optString("title", "Threads video"), info.optString("thumbnail", ""), info.optString("duration").takeIf { it != "null" }.orEmpty(), info.optString("extractor", "Threads"), formats.distinct()) to "Post loaded. Ready to download."
+  }
+ } catch (e: Exception) { null to "Load error: " + (e.localizedMessage ?: "Resolver server timed out") }
+}
+
+private fun startMediaDownload(context: Context, raw: String, title: String): String {
+ return try {
+  val downloadUri = Uri.parse("https://media-hub-resolver.onrender.com/download").buildUpon().appendQueryParameter("url", raw.trim()).build()
   val filename = URLUtil.guessFileName(title + ".mp4", null, "video/mp4")
   val request = DownloadManager.Request(downloadUri).setTitle(title).setDescription("Media HUB video download").setMimeType("video/mp4")
    .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
    .setDestinationInExternalPublicDir(Environment.DIRECTORY_MOVIES, "MediaHUB/" + filename)
    .setAllowedOverMetered(true).setAllowedOverRoaming(false)
   (context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager).enqueue(request)
-  "Found: " + title + ". Download started; check notification."
- } catch (e: Exception) { "Download error: " + (e.localizedMessage ?: "Resolver server unavailable") }
+  "Download added. Check notification and Downloads tab."
+ } catch (e: Exception) { "Download error: " + (e.localizedMessage ?: "Could not start download") }
 }
 private fun readDownloads(context: Context): List<DownloadItem> {
  val manager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
