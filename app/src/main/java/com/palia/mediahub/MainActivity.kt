@@ -9,6 +9,7 @@ import android.os.Environment
 import android.webkit.URLUtil
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -23,13 +24,11 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import kotlinx.coroutines.delay
 
 private val Mint = Color(0xFF08A66A)
 private val DeepMint = Color(0xFF007C50)
@@ -41,6 +40,7 @@ data class DownloadItem(val id: Long, val title: String, val status: String, val
 
 class MainActivity : ComponentActivity() {
  override fun onCreate(savedInstanceState: Bundle?) {
+  installSplashScreen()
   super.onCreate(savedInstanceState)
   val shared = if (intent?.action == Intent.ACTION_SEND) intent.getStringExtra(Intent.EXTRA_TEXT).orEmpty() else ""
   setContent { MediaHubRoot(shared) }
@@ -48,10 +48,8 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable private fun MediaHubRoot(sharedText: String) {
- var splash by remember { mutableStateOf(true) }
- LaunchedEffect(Unit) { delay(1300); splash = false }
  MaterialTheme(colorScheme = lightColorScheme(primary = Mint, secondary = DeepMint, background = Color(0xFFF8FCFA), surface = Color.White, onSurface = Ink)) {
-  if (splash) SplashScreen() else MainShell(sharedText)
+  MainShell(sharedText)
  }
 }
 
@@ -83,7 +81,6 @@ class MainActivity : ComponentActivity() {
  var notice by remember { mutableStateOf("") }
  var downloads by remember { mutableStateOf(emptyList<DownloadItem>()) }
  val context = LocalContext.current
- val clipboard = LocalClipboardManager.current
  fun refresh() { downloads = readDownloads(context) }
  LaunchedEffect(selected) { refresh() }
 
@@ -95,10 +92,7 @@ class MainActivity : ComponentActivity() {
   }
  }) { padding ->
   when (selected) {
-   "Home" -> HomePage(url, { url = it }, {
-    url = clipboard.getText()?.text.orEmpty()
-    notice = if (url.isBlank()) "Clipboard में कोई link नहीं मिला" else "Link pasted"
-   }, { notice = startDownload(context, url); refresh() }, downloads, { selected = "Downloads" }, notice, Modifier.padding(padding))
+   "Home" -> HomePage(url, { url = it }, { notice = startDownload(context, url); refresh() }, downloads, { selected = "Downloads" }, notice, Modifier.padding(padding))
    "Downloads", "History" -> DownloadsPage(downloads, selected == "History", Modifier.padding(padding))
    "Player" -> PlayerPage(downloads, Modifier.padding(padding))
    else -> SettingsPage(Modifier.padding(padding))
@@ -106,7 +100,7 @@ class MainActivity : ComponentActivity() {
  }
 }
 
-@Composable private fun HomePage(url: String, onUrl: (String) -> Unit, onPaste: () -> Unit, onDownload: () -> Unit, downloads: List<DownloadItem>, onAll: () -> Unit, notice: String, modifier: Modifier) {
+@Composable private fun HomePage(url: String, onUrl: (String) -> Unit, onDownload: () -> Unit, downloads: List<DownloadItem>, onAll: () -> Unit, notice: String, modifier: Modifier) {
  LazyColumn(modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 18.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
   item {
    Row(Modifier.fillMaxWidth().background(Color.White).padding(horizontal = 16.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -131,11 +125,7 @@ class MainActivity : ComponentActivity() {
   }
   item {
    Column(Modifier.padding(horizontal = 16.dp).background(Color.White, RoundedCornerShape(22.dp)).padding(14.dp)) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-     OutlinedTextField(value = url, onValueChange = onUrl, modifier = Modifier.weight(1f), placeholder = { Text("Paste video link here...", fontSize = 13.sp) }, leadingIcon = { Icon(Icons.Default.Link, null, tint = DeepMint) }, trailingIcon = { if (url.isNotBlank()) IconButton(onClick = { onUrl("") }) { Icon(Icons.Default.Close, "Clear") } }, shape = RoundedCornerShape(15.dp), singleLine = true)
-     Spacer(Modifier.width(8.dp))
-     FilledTonalButton(onClick = onPaste, contentPadding = PaddingValues(horizontal = 12.dp, vertical = 16.dp)) { Icon(Icons.Default.ContentPaste, null); Spacer(Modifier.width(4.dp)); Text("Paste") }
-    }
+    OutlinedTextField(value = url, onValueChange = onUrl, modifier = Modifier.fillMaxWidth().heightIn(min = 58.dp), placeholder = { Text("Paste video link here...", fontSize = 14.sp) }, leadingIcon = { Icon(Icons.Default.Link, null, tint = DeepMint) }, trailingIcon = { if (url.isNotBlank()) IconButton(onClick = { onUrl("") }) { Icon(Icons.Default.Close, "Clear") } }, shape = RoundedCornerShape(18.dp), singleLine = true, colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Mint, unfocusedBorderColor = Mint, focusedContainerColor = Color.White, unfocusedContainerColor = Color.White))
     Spacer(Modifier.height(12.dp))
     Button(onClick = onDownload, modifier = Modifier.fillMaxWidth().height(54.dp), shape = RoundedCornerShape(30.dp), colors = ButtonDefaults.buttonColors(containerColor = DeepMint)) { Icon(Icons.Default.Download, null); Spacer(Modifier.width(10.dp)); Text("Download", fontSize = 18.sp, fontWeight = FontWeight.Bold) }
     if (notice.isNotBlank()) Text(notice, color = DeepMint, fontSize = 12.sp, modifier = Modifier.padding(top = 8.dp))
@@ -219,7 +209,7 @@ class MainActivity : ComponentActivity() {
 
 private fun startDownload(context: Context, raw: String): String {
  val value = raw.trim()
- if (value.isBlank()) return "पहले video link paste करें।"
+ if (value.isBlank()) return "पहले video link दर्ज करें।"
  val uri = try { Uri.parse(value) } catch (_: Exception) { return "Link सही नहीं है।" }
  if (uri.scheme != "https" && uri.scheme != "http") return "केवल HTTP/HTTPS link समर्थित है।"
  if (!uri.path.orEmpty().lowercase().endsWith(".mp4")) return "यह direct MP4 link नहीं है। Social post URL extract नहीं किया जाएगा।"
