@@ -11,6 +11,13 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.compose.foundation.background
+import androidx.compose.foundation.Image
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.media3.common.MediaItem as ExoMediaItem
+import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.ui.PlayerView
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -68,10 +75,7 @@ class MainActivity : ComponentActivity() {
 
 @Composable private fun BrandMark(size: Int) {
  Box(Modifier.size(size.dp).background(PaleMint, RoundedCornerShape(28.dp)), contentAlignment = Alignment.Center) {
-  Icon(Icons.Default.PlayCircleFilled, null, tint = DeepMint, modifier = Modifier.size((size * .58).dp))
-  Box(Modifier.align(Alignment.BottomEnd).padding(10.dp).size((size * .28).dp).background(Mint, CircleShape), contentAlignment = Alignment.Center) {
-   Icon(Icons.Default.Download, null, tint = Color.White, modifier = Modifier.size((size * .19).dp))
-  }
+  Image(painterResource(R.drawable.brand_mark), contentDescription = "Media HUB logo", modifier = Modifier.fillMaxSize().padding((size * .04).dp), contentScale = ContentScale.Fit)
  }
 }
 
@@ -80,6 +84,7 @@ class MainActivity : ComponentActivity() {
  var url by remember { mutableStateOf(sharedText) }
  var notice by remember { mutableStateOf("") }
  var downloads by remember { mutableStateOf(emptyList<DownloadItem>()) }
+ var selectedFile by remember { mutableStateOf<DownloadItem?>(null) }
  val context = LocalContext.current
  fun refresh() { downloads = readDownloads(context) }
  LaunchedEffect(selected) { refresh() }
@@ -93,8 +98,8 @@ class MainActivity : ComponentActivity() {
  }) { padding ->
   when (selected) {
    "Home" -> HomePage(url, { url = it }, { notice = startDownload(context, url); refresh() }, downloads, { selected = "Downloads" }, notice, Modifier.padding(padding))
-   "Downloads", "History" -> DownloadsPage(downloads, selected == "History", Modifier.padding(padding))
-   "Player" -> PlayerPage(downloads, Modifier.padding(padding))
+   "Downloads", "History" -> DownloadsPage(downloads, selected == "History", { item -> selectedFile = item; selected = "Player" }, Modifier.padding(padding))
+   "Player" -> PlayerPage(downloads, selectedFile, { selectedFile = it }, Modifier.padding(padding))
    else -> SettingsPage(Modifier.padding(padding))
   }
  }
@@ -176,26 +181,49 @@ class MainActivity : ComponentActivity() {
 @Composable private fun FeatureTile(mark: String, label: String, modifier: Modifier) {
  Column(modifier.background(PaleMint, RoundedCornerShape(16.dp)).padding(vertical = 12.dp), horizontalAlignment = Alignment.CenterHorizontally) { Text(mark, color = Mint, fontSize = 24.sp, fontWeight = FontWeight.Black); Text(label, color = Ink, fontSize = 10.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, lineHeight = 12.sp) }
 }
-@Composable private fun DownloadsPage(downloads: List<DownloadItem>, history: Boolean, modifier: Modifier) {
+@Composable private fun DownloadsPage(downloads: List<DownloadItem>, history: Boolean, onOpen: (DownloadItem) -> Unit, modifier: Modifier) {
  Column(modifier.fillMaxSize().padding(18.dp)) {
   Text(if (history) "Download History" else "Your Downloads", fontSize = 24.sp, fontWeight = FontWeight.Bold); Spacer(Modifier.height(12.dp))
   if (downloads.isEmpty()) Text("अभी कोई डाउनलोड उपलब्ध नहीं है।", color = Muted)
-  else LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) { items(downloads, key = { it.id }) { DownloadRow(it) } }
+  else LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) { items(downloads, key = { it.id }) { item -> DownloadRow(item) { onOpen(item) } } }
  }
 }
-@Composable private fun DownloadRow(item: DownloadItem) {
- Row(Modifier.fillMaxWidth().background(Color.White, RoundedCornerShape(16.dp)).padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+@Composable private fun DownloadRow(item: DownloadItem, onClick: () -> Unit = {}) {
+ Row(Modifier.fillMaxWidth().background(Color.White, RoundedCornerShape(16.dp)).clickable(enabled = item.status == "Completed" && item.uri != null, onClick = onClick).padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
   Box(Modifier.size(44.dp).background(PaleMint, RoundedCornerShape(12.dp)), contentAlignment = Alignment.Center) { Icon(Icons.Default.VideoFile, null, tint = DeepMint) }
   Spacer(Modifier.width(10.dp)); Column(Modifier.weight(1f)) { Text(item.title, fontWeight = FontWeight.SemiBold, maxLines = 1); Text(item.status, color = Muted, fontSize = 11.sp) }
   Icon(Icons.Default.PlayCircle, null, tint = DeepMint)
  }
 }
-@Composable private fun PlayerPage(downloads: List<DownloadItem>, modifier: Modifier) {
- Column(modifier.fillMaxSize().padding(22.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-  Icon(Icons.Default.PlayCircle, null, tint = DeepMint, modifier = Modifier.size(72.dp)); Spacer(Modifier.height(12.dp))
-  Text("Media HUB Player", fontSize = 22.sp, fontWeight = FontWeight.Bold)
-  Text("यह स्क्रीन डाउनलोड सूची दिखाती है। Playback के लिए completed file को Android के compatible video player में खोलें।", color = Muted, textAlign = TextAlign.Center)
-  Spacer(Modifier.height(18.dp)); Text("${downloads.size} download record(s)", color = DeepMint, fontWeight = FontWeight.Bold)
+@Composable private fun PlayerPage(downloads: List<DownloadItem>, selected: DownloadItem?, onSelect: (DownloadItem) -> Unit, modifier: Modifier) {
+ val context = LocalContext.current
+ val playable = downloads.filter { it.status == "Completed" && it.uri != null }
+ val player = remember { ExoPlayer.Builder(context).build() }
+ androidx.compose.runtime.DisposableEffect(player) { onDispose { player.release() } }
+ LaunchedEffect(selected?.uri) {
+  selected?.uri?.let { uri ->
+   player.setMediaItem(ExoMediaItem.fromUri(uri))
+   player.prepare()
+   player.playWhenReady = true
+  }
+ }
+ Column(modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+  Text("Media HUB Player", fontSize = 23.sp, fontWeight = FontWeight.Bold)
+  if (selected?.uri != null) {
+   AndroidView(factory = { ctx -> PlayerView(ctx).apply { this.player = player; useController = true } }, update = { it.player = player }, modifier = Modifier.fillMaxWidth().aspectRatio(16f / 9f).background(Color.Black, RoundedCornerShape(16.dp)))
+   Text(selected.title, fontWeight = FontWeight.SemiBold, maxLines = 2)
+  } else {
+   Box(Modifier.fillMaxWidth().aspectRatio(16f / 9f).background(Color(0xFF10251D), RoundedCornerShape(16.dp)), contentAlignment = Alignment.Center) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) { Icon(Icons.Default.PlayCircle, null, tint = Color.White, modifier = Modifier.size(64.dp)); Text("Select a downloaded video", color = Color.White) }
+   }
+  }
+  Text("Downloaded videos", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+  if (playable.isEmpty()) Text("Playback के लिए पहले direct MP4 video download करें।", color = Muted)
+  else LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) { items(playable, key = { it.id }) { item ->
+   Row(Modifier.fillMaxWidth().background(Color.White, RoundedCornerShape(12.dp)).clickable { onSelect(item) }.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+    Icon(Icons.Default.PlayCircle, null, tint = DeepMint); Spacer(Modifier.width(10.dp)); Column { Text(item.title, fontWeight = FontWeight.SemiBold, maxLines = 1); Text("Tap to play", color = Muted, fontSize = 11.sp) }
+   }
+  } }
  }
 }
 @Composable private fun SettingsPage(modifier: Modifier) {
