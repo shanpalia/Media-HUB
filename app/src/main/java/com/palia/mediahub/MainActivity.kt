@@ -253,6 +253,8 @@ private fun HomeScreen(
         if (info != null) {
             item {
                 Column(Modifier.padding(horizontal = 14.dp).background(Color.White, RoundedCornerShape(22.dp)).padding(15.dp)) {
+                    VideoPreview(url)
+                    Spacer(Modifier.height(12.dp))
                     Text(info.title, color = Ink, fontWeight = FontWeight.Bold, fontSize = 16.sp, maxLines = 3, overflow = TextOverflow.Ellipsis)
                     Text(info.platform + if (info.duration > 0) " · ${info.duration}s" else "", color = Muted, fontSize = 12.sp)
                     Spacer(Modifier.height(14.dp))
