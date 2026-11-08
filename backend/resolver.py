@@ -21,7 +21,7 @@ app.add_middleware(
 )
 
 ALLOWED_HOST_SUFFIXES = (
-    "youtube.com", "youtu.be", "facebook.com", "fb.com", "fb.watch",
+    "facebook.com", "fb.com", "fb.watch",
     "instagram.com", "threads.net", "threads.com", "tiktok.com",
     "x.com", "twitter.com", "reddit.com", "redd.it", "pinterest.com", "pin.it",
 )
