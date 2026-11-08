@@ -1,4 +1,4 @@
-const BACKEND = "https://mint-mind-resolver.onrender.com";
+const BACKEND = "https://media-hub-resolver.onrender.com";
 
 const PAGE = `<!doctype html>
 <html lang="en">
