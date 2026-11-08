@@ -105,24 +105,24 @@ def info(url: str = Query(..., min_length=8, max_length=2048)):
             size = f.get("filesize") or f.get("filesize_approx")
             duration = data.get("duration") or 0
             ext = f.get("ext") or "audio"
-            if f.get("vcodec") != "none" and f.get("acodec") != "none" and fmt_id not in seen_video:
+            if f.get("vcodec") != "none" and fmt_id not in seen_video:
                 seen_video.add(fmt_id)
-                abr = f.get("abr")
+                abr = f.get("abr") if f.get("acodec") != "none" else None
                 vbr = f.get("vbr")
                 tbr = f.get("tbr")
                 height = f.get("height")
-                # Last-resort estimate when the extractor omits both filesize and bitrate.
-                # Typical combined audio/video bitrate by resolution; clearly marked estimated.
+                # Estimate video-only stream size using its bitrate or a conservative resolution-based fallback.
                 fallback_video_kbps = next((kbps for limit, kbps in [(144, 110), (240, 250), (360, 500), (480, 900), (720, 1800), (1080, 3500), (1440, 6000), (2160, 12000)] if height and height <= limit), 1800 if height else None)
-                fallback_total_kbps = (fallback_video_kbps or 0) + (abr or 96)
-                estimated_total = int(size) if size else (int(tbr * duration * 1000 / 8) if tbr and duration else (int(fallback_total_kbps * duration * 1000 / 8) if fallback_video_kbps and duration else None))
+                stream_kbps = vbr or (tbr if f.get("acodec") == "none" else None) or fallback_video_kbps
+                estimated_video_size = int(size) if size else (int(stream_kbps * duration * 1000 / 8) if stream_kbps and duration else None)
                 audio_size = int(abr * duration * 1000 / 8) if abr and duration else None
+                has_audio = f.get("acodec") != "none"
+                estimated_total = estimated_video_size + (audio_size or 0) if estimated_video_size and has_audio else estimated_video_size
                 formats.append({
-                    "format_id": fmt_id, "ext": ext, "height": f.get("height"),
-                    "filesize": estimated_total, "filesize_exact": bool(size), "filesize_estimated": not bool(size), "abr": abr, "vbr": vbr, "tbr": tbr, "fps": f.get("fps"),
-                    "video_size": max(0, int(estimated_total - audio_size)) if estimated_total and audio_size else None,
-                    "audio_size": audio_size,
-                    "label": " · ".join(x for x in [((str(f.get("height")) + "p") if f.get("height") else None), ((str(round(f.get("fps"))) + " FPS") if f.get("fps") else None), ext.upper()] if x),
+                    "format_id": fmt_id, "ext": ext, "height": height,
+                    "filesize": estimated_total, "filesize_exact": bool(size), "filesize_estimated": not bool(size), "abr": abr, "vbr": vbr, "tbr": tbr, "fps": f.get("fps"), "has_audio": has_audio,
+                    "video_size": estimated_video_size, "audio_size": audio_size,
+                    "label": " · ".join(x for x in [((str(height) + "p") if height else (f.get("format_note") or f.get("resolution"))), ((str(round(f.get("fps"))) + " FPS") if f.get("fps") else None), ext.upper()] if x),
                 })
             elif f.get("vcodec") == "none" and f.get("acodec") != "none" and fmt_id not in seen_audio:
                 seen_audio.add(fmt_id)
@@ -170,9 +170,10 @@ def download(
         if media_type == "audio":
             allowed = {str(f.get("format_id")) for f in data.get("formats", []) if f.get("url") and f.get("acodec") != "none"}
         else:
-            allowed = {str(f.get("format_id")) for f in data.get("formats", []) if f.get("url") and f.get("vcodec") != "none" and f.get("acodec") != "none"}
+            allowed = {str(f.get("format_id")) for f in data.get("formats", []) if f.get("url") and f.get("vcodec") != "none"}
         if format_id not in allowed:
             raise HTTPException(400, "That format is no longer available. Please check the video again.")
+        selected_source_format = next((f for f in data.get("formats", []) if str(f.get("format_id")) == format_id), {})
     except HTTPException:
         raise
     except Exception as e:
@@ -190,8 +191,9 @@ def download(
         "retries": 2,
         "fragment_retries": 2,
         "socket_timeout": 30,
-        "format": format_id,
+        "format": (format_id + "+bestaudio/best[ext=mp4]/best") if media_type == "video" and selected_source_format.get("acodec") == "none" else format_id,
         "outtmpl": output_template,
+        "merge_output_format": "mp4",
         "overwrites": True,
         "extractor_args": {"youtube": {"player_client": ["web_embedded", "android_vr"]}},
     }
