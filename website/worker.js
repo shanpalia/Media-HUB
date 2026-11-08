@@ -65,7 +65,7 @@ body.dark{--ink:#e5fff5;--muted:#b0d0c4;background:radial-gradient(ellipse at 50
 <button class="downloadbtn" id="load"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m-5-5 5 5 5-5M4 19v2h16v-2"/></svg>Download</button>
 </section>
 <div id="status" class="status"></div>
-<div id="result" class="result"><img id="thumb" class="thumb" alt="Video thumbnail"><div class="rmeta"><div id="title" class="rtitle"></div><div id="meta" class="rsub"></div><select id="quality" class="qualityselect" aria-label="Choose video quality"></select><a id="download" class="downloadlink" href="#" rel="noopener">↓ Download Video</a></div></div>
+<div id="result" class="result" aria-hidden="true"></div>
 <section id="downloadPage" class="downloadpage" aria-live="polite">
  <div class="downloadpagehead"><h2>Video Download</h2><button id="backToSearch" class="backbtn">← Back</button></div>
  <div class="filepreview"><img id="pageThumb" alt="Video thumbnail"><div><div id="pageTitle" class="filetitle"></div><div id="pagePlatform" class="fileplatform"></div></div></div>
