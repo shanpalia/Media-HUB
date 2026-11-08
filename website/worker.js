@@ -52,10 +52,10 @@ body.dark{--ink:#e5fff5;--muted:#b0d0c4;background:radial-gradient(ellipse at 50
 <body>
 <header class="topbar">
 <button class="iconbtn" id="menuToggle" aria-label="Open menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.7" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button>
-<div class="menu" id="menu"><a href="#downloader">Downloader</a><a href="#platforms">Supported Platforms</a><a href="#steps">How it works</a><button id="menuAbout">About Mint Mind</button></div>
+<div class="menu" id="menu"><a href="#home">Home</a><a href="#downloader">Downloader</a><a href="#platforms">Supported Platforms</a><a href="#steps">How it works</a><button id="menuAbout">About Mint Mind</button></div>
 <div class="righttools"><button class="iconbtn themebtn" id="themeToggle" aria-label="Toggle theme"><svg viewBox="0 0 24 24" fill="none" stroke="#00a979" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"/></svg><span>☾</span></button><button class="aboutbtn" id="aboutOpen"><svg viewBox="0 0 24 24" fill="none" stroke="#006b50" stroke-width="2.6"><circle cx="12" cy="12" r="9"/><path d="M12 11v6m0-10h.01"/></svg>About</button></div>
 </header>
-<section class="hero">
+<section class="hero" id="home">
 <div class="brandlockup">
 <svg class="brandicon" viewBox="0 0 220 220" role="img" aria-label="Mint Mind app logo"><defs><linearGradient id="iconbg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#12d6a0"/><stop offset=".52" stop-color="#006b56"/><stop offset="1" stop-color="#003e39"/></linearGradient><filter id="glow"><feGaussianBlur stdDeviation="5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><rect x="12" y="9" width="196" height="202" rx="48" fill="url(#iconbg)" stroke="#8effd5" stroke-width="4"/><path d="M48 159V62l62 55 62-55v97" fill="none" stroke="#fff" stroke-width="20" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)"/><path d="M98 46c-5-24 11-36 34-30-4 23-14 34-34 30Z" fill="#35f59c"/><path d="M95 173h30m-15-24v24m-14-9 14 14 14-14" fill="none" stroke="#fff" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 142c31 23 73 22 105 5 31-16 56-41 99-34" fill="none" stroke="#24e5ad" stroke-width="5" stroke-linecap="round"/></svg>
 <div class="brandtype"><div class="wordmark">Mint <span>Mind</span></div><div class="byline">By PaliaAPK HUB</div><div class="tagline">All-in-One Video Downloader</div></div>
@@ -122,6 +122,8 @@ document.getElementById('backToSearch').addEventListener('click',()=>{const p=do
 document.getElementById('pasteBtn').addEventListener('click',async()=>{try{input.value=await navigator.clipboard.readText();input.focus()}catch{showStatus('Clipboard access is blocked. Please paste your link manually.','error')}});
 document.getElementById('themeToggle').addEventListener('click',()=>document.body.classList.toggle('dark'));
 document.getElementById('menuToggle').addEventListener('click',()=>document.getElementById('menu').classList.toggle('open'));
+document.querySelectorAll('#menu a').forEach(link=>link.addEventListener('click',e=>{e.preventDefault();const target=document.querySelector(link.getAttribute('href'));document.getElementById('menu').classList.remove('open');if(target){target.scrollIntoView({behavior:'smooth',block:'start'});history.replaceState(null,'',link.getAttribute('href'));}}));
+document.addEventListener('click',e=>{const menu=document.getElementById('menu');if(menu.classList.contains('open')&&!menu.contains(e.target)&&!document.getElementById('menuToggle').contains(e.target))menu.classList.remove('open');});
 const modal=document.getElementById('aboutModal');function openAbout(){modal.classList.add('open');document.getElementById('menu').classList.remove('open')}document.getElementById('aboutOpen').addEventListener('click',openAbout);document.getElementById('menuAbout').addEventListener('click',openAbout);document.getElementById('aboutClose').addEventListener('click',()=>modal.classList.remove('open'));modal.addEventListener('click',e=>{if(e.target===modal)modal.classList.remove('open')});
 </script>
 </body></html>`;
