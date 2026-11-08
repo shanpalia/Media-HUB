@@ -6,12 +6,12 @@ const PAGE = `<!doctype html>
 <script src="https://quge5.com/88/tag.min.js" data-zone="307495" async data-cfasync="false"></script>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#e8fff7">
-<meta name="description" content="Mint Mind by PaliaAPK HUB is an all-in-one online video downloader for supported public links from Facebook, Instagram, Threads, TikTok, X, Reddit and Pinterest.">
+<meta name="description" content="Mint Mind by PaliaAPK HUB is an online video downloader for supported public Facebook, Instagram, TikTok, Threads, X, Reddit and Pinterest links. Save available videos or audio in a few simple steps.">
 <meta name="robots" content="index, follow, max-image-preview:large">
 <link rel="canonical" href="https://mintmind-3xv.pages.dev/">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Mint Mind by PaliaAPK HUB">
-<meta property="og:title" content="Mint Mind – Online Video Downloader | PaliaAPK HUB">
+<meta property="og:title" content="Mint Mind Video Downloader | PaliaAPK HUB">
 <meta property="og:description" content="Download supported public videos with Mint Mind by PaliaAPK HUB.">
 <meta property="og:url" content="https://mintmind-3xv.pages.dev/">
 <meta name="twitter:card" content="summary">
@@ -19,7 +19,7 @@ const PAGE = `<!doctype html>
 <meta name="twitter:description" content="Mint Mind by PaliaAPK HUB — all-in-one video downloader.">
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Mint Mind","alternateName":"Mint Mind by PaliaAPK HUB","url":"https://mintmind-3xv.pages.dev/","applicationCategory":"MultimediaApplication","operatingSystem":"Any","description":"Online downloader interface for supported public video links from Facebook, Instagram, Threads, TikTok, X, Reddit and Pinterest.","publisher":{"@type":"Organization","name":"PaliaAPK HUB"},"creator":{"@type":"Person","name":"ShanPalia"}}</script>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='18' fill='%2300a979'/%3E%3Cpath d='M12 49V16l20 18 20-18v33' fill='none' stroke='white' stroke-width='6' stroke-linecap='round'/%3E%3C/svg%3E">
-<title>Mint Mind — By PaliaAPK HUB</title>
+<title>Mint Mind Video Downloader | PaliaAPK HUB</title>
 <style>
 :root{--green:#00a979;--deep:#006b50;--ink:#082c28;--muted:#536c68;--glass:#ffffffb8;--line:#ccefe5;--shadow:0 12px 30px #008d6720}
 *{box-sizing:border-box}body{margin:0;min-height:100vh;color:var(--ink);font:16px/1.45 Inter,system-ui,-apple-system,"Segoe UI",sans-serif;background:radial-gradient(ellipse at 50% 1%,#ffffff 0%,#effff9 35%,#d6fff0 75%,#b9f5e2 100%);overflow-x:hidden}
@@ -60,7 +60,8 @@ body.dark{--ink:#e5fff5;--muted:#b0d0c4;background:radial-gradient(ellipse at 50
 @media(max-width:1050px){.brandicon{width:170px;height:170px}.platforms{padding:0;gap:11px}.downloadbtn{min-width:235px}.steps{gap:12px;padding:13px 18px}.step{gap:12px}.stepicon{width:58px;height:58px}}
 @media(max-width:700px){.topbar{height:66px;padding:0 12px}.aboutbtn{height:42px;padding:0 13px;font-size:14px}.themebtn{height:42px;gap:6px}.hero{padding:4px 12px 12px}.brandlockup{flex-direction:column;gap:5px}.brandicon{width:116px;height:116px}.brandtype{text-align:center}.wordmark{font-size:clamp(44px,13vw,72px);letter-spacing:-3px}.byline{font-size:17px}.tagline{font-size:17px}.perks{gap:7px;margin:12px auto 15px}.perk{font-size:12px;padding:7px 11px;gap:6px}.perk strong{font-size:17px}main{padding:0 12px 18px}.download-panel{padding:12px;display:flex;flex-direction:column;gap:10px;border-radius:22px}.inputwrap{height:65px;width:100%;padding:0 12px;gap:9px;border-radius:17px}.linkicon{width:27px;height:27px}.inputwrap input{font-size:14px}.pastebtn{width:42px;height:42px;border-radius:11px}.pastebtn svg{width:23px;height:23px}.downloadbtn{height:58px;min-width:0;width:100%;font-size:20px;border-radius:17px}.downloadbtn svg{width:27px;height:27px}.sectiontitle{gap:12px;font-size:19px;margin:19px auto 12px}.sectiontitle:before,.sectiontitle:after{width:8vw}.platforms{grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}.platform{min-height:105px;border-radius:17px;font-size:12px}.platform svg{width:43px;height:43px}.steps{grid-template-columns:1fr;gap:12px;margin:17px 0 0;padding:14px}.step{gap:13px}.stepicon{width:48px;height:48px}.stepicon svg{width:28px;height:28px}.step b{font-size:16px}.step p{font-size:13px}.arrow{display:none}footer{font-size:13px}.result{margin:12px 0 0}.thumb{width:100px}}
 
-.platform-hub{margin:24px 12px;padding:20px;border:1px solid #ccefe5;border-radius:24px;background:#ffffffc9;box-shadow:var(--shadow)}.platform-hub h2{margin:0 0 6px;text-align:center}.hub-note{text-align:center;color:var(--muted);font-size:13px;margin:0 0 16px}</style>
+.platform-hub{margin:24px 12px;padding:20px;border:1px solid #ccefe5;border-radius:24px;background:#ffffffc9;box-shadow:var(--shadow)}.platform-hub h2{margin:0 0 6px;text-align:center}.hub-note{text-align:center;color:var(--muted);font-size:13px;margin:0 0 16px}.seo-guide{margin:28px 12px 10px;padding:24px 26px;border:1px solid #ccefe5;border-radius:24px;background:#ffffffc9;box-shadow:var(--shadow);color:var(--ink)}.seo-guide h2{margin:0 0 10px;font-size:clamp(22px,2.3vw,30px)}.seo-guide h3{margin:20px 0 8px;font-size:18px}.seo-guide p,.seo-guide li{line-height:1.65;color:var(--muted)}.seo-guide ol{padding-left:22px}.seo-guide details{padding:12px 0;border-top:1px solid #d8eee6}.seo-guide summary{cursor:pointer;font-weight:750}.seo-guide details p{margin:8px 0 0}.seo-guide .seo-legal{font-size:13px;margin:18px 0 0}body.dark .seo-guide{background:#123c34dc;border-color:#2a6757}body.dark .seo-guide details{border-color:#2a6757}@media(max-width:700px){.seo-guide{margin:18px 0 8px;padding:18px 15px}.seo-guide h3{font-size:17px}}
+</style>
 </head>
 <body>
 <header class="topbar">
@@ -71,7 +72,7 @@ body.dark{--ink:#e5fff5;--muted:#b0d0c4;background:radial-gradient(ellipse at 50
 <section class="hero" id="home">
 <div class="brandlockup">
 <svg class="brandicon" viewBox="0 0 220 220" role="img" aria-label="Mint Mind app logo"><defs><linearGradient id="iconbg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#12d6a0"/><stop offset=".52" stop-color="#006b56"/><stop offset="1" stop-color="#003e39"/></linearGradient><filter id="glow"><feGaussianBlur stdDeviation="5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><rect x="12" y="9" width="196" height="202" rx="48" fill="url(#iconbg)" stroke="#8effd5" stroke-width="4"/><path d="M48 159V62l62 55 62-55v97" fill="none" stroke="#fff" stroke-width="20" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)"/><path d="M98 46c-5-24 11-36 34-30-4 23-14 34-34 30Z" fill="#35f59c"/><path d="M95 173h30m-15-24v24m-14-9 14 14 14-14" fill="none" stroke="#fff" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 142c31 23 73 22 105 5 31-16 56-41 99-34" fill="none" stroke="#24e5ad" stroke-width="5" stroke-linecap="round"/></svg>
-<div class="brandtype"><div class="wordmark">Mint <span>Mind</span></div><div class="byline">By PaliaAPK HUB</div><div class="tagline">All-in-One Video Downloader</div></div>
+<div class="brandtype"><h1 class="wordmark">Mint <span>Mind</span></h1><div class="byline">By PaliaAPK HUB</div><div class="tagline">All-in-One Video Downloader</div></div>
 </div>
 <div class="perks"><div class="perk"><strong>ϟ</strong>Fast Download</div><div class="perk"><strong>HD</strong>HD Quality</div><div class="perk"><strong>∞</strong>No Login</div><div class="perk"><strong>✓</strong>100% Free</div></div>
 </section>
@@ -107,6 +108,20 @@ body.dark{--ink:#e5fff5;--muted:#b0d0c4;background:radial-gradient(ellipse at 50
 <div class="step"><div class="stepicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-2 2M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l2-2"/></svg></div><div><b>1. Paste Link</b><p>Copy and paste the video link</p></div></div><div class="arrow">→</div>
 <div class="step"><div class="stepicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 3v12m-5-5 5 5 5-5M4 19v2h16v-2"/></svg></div><div><b>2. Download</b><p>Click the Download button</p></div></div><div class="arrow">→</div>
 <div class="step"><div class="stepicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h7l2 2h9a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2Z"/></svg></div><div><b>3. Save &amp; Enjoy</b><p>Get your video in HD quality</p></div></div>
+</section>
+<section class="seo-guide" id="about-mint-mind" aria-labelledby="seo-title">
+  <h2 id="seo-title">Mint Mind – Online Video Downloader</h2>
+  <p>Mint Mind is an online video downloader by PaliaAPK HUB. Use the downloader above to check supported public video links from Facebook, Instagram, Threads, TikTok, X, Reddit and Pinterest. Available formats and download options depend on the source link.</p>
+  <h3>How to use Mint Mind</h3>
+  <ol><li>Copy a link to a public video that you are allowed to save.</li><li>Paste the link into the Mint Mind downloader.</li><li>Select an available audio or video format, then follow the download steps.</li></ol>
+  <h3>Supported platforms</h3>
+  <p>Mint Mind can check supported public links from Facebook, Instagram, Threads, TikTok, X (Twitter), Reddit and Pinterest. Some posts may not be available because of privacy settings, regional limits or platform restrictions.</p>
+  <h3>Frequently asked questions</h3>
+  <details><summary>Is Mint Mind an online video downloader?</summary><p>Yes. Mint Mind provides a browser-based interface for checking supported public video links and available audio or video download formats.</p></details>
+  <details><summary>Do I need to create an account?</summary><p>The Mint Mind website does not ask you to create an account to use the downloader interface.</p></details>
+  <details><summary>Can I download private videos?</summary><p>No. Mint Mind is intended for supported public links. Private, restricted or unavailable content may not work.</p></details>
+  <details><summary>Is Mint Mind affiliated with Facebook, Instagram or other platforms?</summary><p>No. Mint Mind is an independent service by PaliaAPK HUB and is not affiliated with the listed social platforms.</p></details>
+  <p class="seo-legal">Please download only content you own or have permission to save, and respect each platform’s terms and copyright rules.</p>
 </section>
 </main>
 <footer class="site-footer"><div>☁ &nbsp; Mint Mind – By PaliaAPK HUB &nbsp; ☁</div><div class="footer-credit">Developer by <strong>ShanPalia</strong></div><button class="share-site" id="shareSite" type="button">↗ Share Website</button></footer>
