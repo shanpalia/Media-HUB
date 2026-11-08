@@ -9,6 +9,8 @@ import yt_dlp
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
+from starlette.background import BackgroundTask
+import shutil
 
 app = FastAPI(title="Media HUB Resolver", version="1.1.0")
 app.add_middleware(
@@ -180,7 +182,7 @@ def download(
             media_type=media_type,
             filename=title + ext,
             headers={"Cache-Control": "no-store", "X-Content-Type-Options": "nosniff"},
-            background=None,
+            background=BackgroundTask(shutil.rmtree, tmpdir, ignore_errors=True),
         )
     except HTTPException:
         raise
