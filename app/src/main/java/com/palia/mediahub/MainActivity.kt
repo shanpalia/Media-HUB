@@ -394,21 +394,46 @@ private fun VideoPreview(url: String) {
 }
 
 @Composable
-private fun DownloadsScreen(items: List<LocalDownload>, history: Boolean, modifier: Modifier, onOpen: (LocalDownload) -> Unit, onRefresh: () -> Unit) {
+private fun DownloadsScreen(
+    items: List<LocalDownload>, history: Boolean, modifier: Modifier,
+    onOpen: (LocalDownload) -> Unit, onDelete: (LocalDownload) -> Unit,
+    onRename: (LocalDownload) -> Unit, onRefresh: () -> Unit
+) {
     Column(modifier.fillMaxSize().padding(16.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) { Text(if (history) "Download History" else "Downloads", Modifier.weight(1f), fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Ink); IconButton(onClick = onRefresh) { Icon(Icons.Default.Refresh, "Refresh", tint = DeepMint) } }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.Default.Folder, null, tint = DeepMint, modifier = Modifier.size(25.dp))
+            Spacer(Modifier.width(8.dp))
+            Text(if (history) "Download History" else "Downloads", Modifier.weight(1f), fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Ink)
+            IconButton(onClick = onRefresh) { Icon(Icons.Default.Refresh, "Refresh", tint = DeepMint) }
+        }
         if (items.isEmpty()) Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("No downloads yet.", color = Muted) }
-        else LazyColumn(verticalArrangement = Arrangement.spacedBy(9.dp)) { items(items, key = { it.id }) { DownloadRow(it) { onOpen(it) } } }
+        else LazyColumn(verticalArrangement = Arrangement.spacedBy(9.dp)) {
+            items(items, key = { it.id }) { item ->
+                DownloadRow(item, onClick = { if (item.state == "Completed") onOpen(item) }, onRename = { onRename(item) }, onDelete = { onDelete(item) })
+            }
+        }
     }
 }
 
 @Composable
-private fun DownloadRow(item: LocalDownload, onClick: () -> Unit = {}) {
-    Row(Modifier.fillMaxWidth().background(Color.White, RoundedCornerShape(15.dp)).clickable(enabled = item.uri != null && item.state == "Completed", onClick = onClick).padding(13.dp), verticalAlignment = Alignment.CenterVertically) {
-        Box(Modifier.size(43.dp).background(PaleMint, RoundedCornerShape(12.dp)), contentAlignment = Alignment.Center) { Icon(if (item.title.endsWith(".mp3", true)) Icons.Default.MusicNote else Icons.Default.VideoFile, null, tint = DeepMint) }
+private fun DownloadRow(
+    item: LocalDownload, onClick: () -> Unit = {},
+    onRename: () -> Unit = {}, onDelete: () -> Unit = {}
+) {
+    Row(Modifier.fillMaxWidth().background(Color.White, RoundedCornerShape(15.dp)).padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+        Box(Modifier.size(43.dp).background(PaleMint, RoundedCornerShape(12.dp)).clickable(enabled = item.uri != null && item.state == "Completed", onClick = onClick), contentAlignment = Alignment.Center) {
+            Icon(if (item.title.endsWith(".mp3", true)) Icons.Default.MusicNote else Icons.Default.VideoFile, null, tint = DeepMint)
+        }
         Spacer(Modifier.width(10.dp))
-        Column(Modifier.weight(1f)) { Text(item.title, color = Ink, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis); Text(item.state, color = Muted, fontSize = 11.sp) }
-        if (item.uri != null && item.state == "Completed") Icon(Icons.Default.PlayCircle, null, tint = DeepMint)
+        Column(Modifier.weight(1f).clickable(enabled = item.uri != null && item.state == "Completed", onClick = onClick)) {
+            Text(item.title, color = Ink, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(item.state, color = Muted, fontSize = 11.sp)
+        }
+        if (item.state == "Completed") {
+            IconButton(onClick = onClick) { Icon(Icons.Default.PlayCircle, "Play", tint = DeepMint) }
+            IconButton(onClick = onRename) { Icon(Icons.Default.Edit, "Rename", tint = DeepMint) }
+        }
+        IconButton(onClick = onDelete) { Icon(Icons.Default.Delete, "Delete", tint = Color(0xFFCC4141)) }
     }
 }
 
