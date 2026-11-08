@@ -262,7 +262,6 @@ def download(
     except HTTPException:
         raise
     except Exception as e:
-        import shutil
         shutil.rmtree(tmpdir, ignore_errors=True)
         message = str(e).splitlines()[0][:200]
         raise HTTPException(422, "Download failed. The source may block server downloads or this format may be unavailable. " + message)
