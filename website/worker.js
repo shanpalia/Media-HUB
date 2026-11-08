@@ -127,12 +127,13 @@ export default {async fetch(request){
  const url=new URL(request.url);
  if(url.pathname==="/")return new Response(PAGE,{headers:{"content-type":"text/html; charset=utf-8","cache-control":"no-cache","x-content-type-options":"nosniff","referrer-policy":"strict-origin-when-cross-origin"}});
  if(url.pathname==="/health")return json({ok:true,service:"Media HUB Cloudflare frontend"});
- if(url.pathname==="/api/info"||url.pathname==="/api/download"){
+ if(url.pathname==="/api/info"||url.pathname==="/api/download"||url.pathname==="/api/preview"){
   const target=url.searchParams.get("url")||"";
   if(!validUrl(target))return json({detail:"Only supported public social-video URLs are accepted."},400);
-  const endpoint=url.pathname==="/api/info"?"/info":"/download";
+  const endpoint=url.pathname==="/api/info"?"/info":(url.pathname==="/api/preview"?"/preview":"/download");
+  const params=new URLSearchParams(url.searchParams);params.delete("url");params.set("url",target);
   try{
-   const upstream=await fetch(BACKEND+endpoint+"?url="+encodeURIComponent(target),{headers:{"Accept":request.headers.get("Accept")||"*/*"}});
+   const upstream=await fetch(BACKEND+endpoint+"?"+params.toString(),{headers:{"Accept":request.headers.get("Accept")||"*/*"}});
    const headers=new Headers(upstream.headers);headers.set("cache-control","no-store");headers.set("x-content-type-options","nosniff");
    return new Response(upstream.body,{status:upstream.status,statusText:upstream.statusText,headers});
   }catch{return json({detail:"Media service is temporarily unavailable. Please retry shortly."},502)}
