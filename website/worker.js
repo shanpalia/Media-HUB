@@ -1,11 +1,11 @@
-const BACKEND = "https://media-hub-resolver.onrender.com";
+const BACKEND = "https://mint-mind-resolver.onrender.com";
 
 const PAGE = `<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#e9fff5"><link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='18' fill='%230b9b70'/%3E%3Cpath d='M16 12h18c12 0 19 8 19 20S46 52 34 52H16z' fill='white'/%3E%3Cpath d='M27 23v18l15-9z' fill='%230b9b70'/%3E%3C/svg%3E"><meta name="description" content="Media HUB by PaliaAPK HUB — save public videos from Facebook, Instagram and Threads.">
-<title>Media HUB — PaliaAPK HUB</title>
+<meta name="theme-color" content="#e9fff5"><link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x2='1' y2='1'%3E%3Cstop stop-color='%2300c98b'/%3E%3Cstop offset='1' stop-color='%23065d47'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='18' fill='url(%23g)'/%3E%3Cpath d='M12 48V16l20 18 20-18v32' fill='none' stroke='white' stroke-width='6' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M29 9c-1-5 3-7 8-6-1 5-3 7-8 6Z' fill='%23baffdf'/%3E%3C/svg%3E"><meta name="description" content="Mint Mind by PaliaAPK HUB — download public videos from your favourite platforms.">
+<title>Mint Mind — By PaliaAPK HUB</title>
 <style>
 :root{--mint:#dff8ed;--green:#0b9b70;--deep:#087653;--ink:#152b25;--muted:#71827b;--line:#e3eee9;--white:#fff;--bg:#f7fbf9}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif}
@@ -25,7 +25,7 @@ footer{border-top:1px solid var(--line);text-align:center;padding:24px;color:#83
 @media(max-width:620px){header{height:64px;padding:0 17px}nav{gap:12px;font-size:11px}main{padding:42px 15px 52px}.panel{padding:17px;border-radius:19px}.urlrow{flex-direction:column}.btn{width:100%}.features{grid-template-columns:1fr;gap:10px;margin-top:26px}.result{align-items:flex-start}.thumb{width:105px}.download{width:100%}.platform{font-size:12px;gap:5px}}
 </style></head>
 <body>
-<header><div class="brand"><div class="logo"><svg viewBox="0 0 40 40" width="29" height="29"><path d="M8 5h14c9 0 14 6 14 15S31 35 22 35H8z" fill="none" stroke="white" stroke-width="3"/><path d="M16 13v14l12-7z" fill="white"/></svg></div><div>PALIAAPK HUB<small>MEDIA DOWNLOADER</small></div></div><nav><a href="#downloader">Downloader</a><a href="#how">How it works</a></nav></header>
+<header><div class="brand"><div class="logo"><svg viewBox="0 0 48 48" width="32" height="32" aria-label="Mint Mind"><path d="M7 39V10l17 16L41 10v29" fill="none" stroke="white" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 7c-1-5 3-7 8-6-1 5-3 7-8 6Z" fill="#baffdf"/></svg></div><div>MINT MIND<small>BY PALIAAPK HUB</small></div></div><nav><a href="#downloader">Downloader</a><a href="#how">How it works</a></nav></header>
 <main>
 <div style="text-align:center"><span class="eyebrow">✦ SIMPLE · FAST · FREE</span><h1>Save your favourite<br><span class="accent">social videos.</span></h1><p class="sub">Paste a public video link from Facebook, Instagram, Threads, YouTube, TikTok, X, Reddit or Pinterest. Preview it, then download when available.</p></div>
 <section class="panel" id="downloader">
@@ -36,7 +36,7 @@ footer{border-top:1px solid var(--line);text-align:center;padding:24px;color:#83
 <div id="result" class="result"><img id="thumb" class="thumb" alt="Video thumbnail"><div class="rmeta"><div id="title" class="rtitle"></div><div id="meta" class="rsub"></div><a id="download" class="btn download" href="#" target="_blank" rel="noopener">↓ Download Video</a></div></div>
 </section>
 <section class="features" id="how"><article class="feature"><div class="ficon">🔗</div><b>1. Copy link</b><p>Copy a public video link from any supported platform.</p></article><article class="feature"><div class="ficon">⚡</div><b>2. Check video</b><p>Paste the link and tap Download to check availability.</p></article><article class="feature"><div class="ficon">⬇</div><b>3. Download</b><p>Preview the result and save the video when a downloadable file is available.</p></article></section>
-</main><footer>© 2026 <b>Media HUB</b> · Developer by shanpalia · Use content only with permission.</footer>
+</main><footer>© 2026 <b>Mint Mind</b> · By PaliaAPK HUB · Use content only with permission.</footer>
 <script>
 const input=document.getElementById('url'),load=document.getElementById('load'),statusBox=document.getElementById('status'),result=document.getElementById('result');let platform='facebook';
 const placeholders={facebook:'https://www.facebook.com/...',instagram:'https://www.instagram.com/reel/...',threads:'https://www.threads.com/@user/post/...',youtube:'https://www.youtube.com/watch?v=...',tiktok:'https://www.tiktok.com/@user/video/...',x:'https://x.com/user/status/...',reddit:'https://www.reddit.com/r/.../comments/...',pinterest:'https://www.pinterest.com/pin/...'};
