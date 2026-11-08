@@ -123,6 +123,10 @@ private fun MainScreen(sharedText: String) {
     var downloads by remember { mutableStateOf(readDownloads(context)) }
     var selectedFile by remember { mutableStateOf<LocalDownload?>(null) }
     var dark by remember { mutableStateOf(false) }
+    var overwriteTarget by remember { mutableStateOf<LocalDownload?>(null) }
+    var renameTarget by remember { mutableStateOf<LocalDownload?>(null) }
+    var renameText by remember { mutableStateOf("") }
+    var actionMessage by remember { mutableStateOf("") }
 
     fun refresh() { downloads = readDownloads(context) }
     fun resetResult() { info = null; selectedVideo = null; selectedAudio = null; message = "" }
@@ -140,8 +144,8 @@ private fun MainScreen(sharedText: String) {
     ) { padding ->
         when (tab) {
             "Home" -> HomeScreen(
-                modifier = Modifier.padding(padding), url = url, onUrl = { url = it; chosenPlatform = detectPlatform(it) ?: chosenPlatform; resetResult() },
-                platform = chosenPlatform, onPlatform = { chosenPlatform = it },
+                modifier = Modifier.padding(padding), url = url, onUrl = { url = it; chosenPlatform = detectPlatform(it).orEmpty(); resetResult() },
+                platform = detectPlatform(url).orEmpty(), onPlatform = { chosenPlatform = it },
                 info = info, selectedVideo = selectedVideo, selectedAudio = selectedAudio,
                 mode = mediaMode, onMode = { mediaMode = it; selectedAudio = null; selectedVideo = null },
                 busy = busy, message = message,
@@ -166,21 +170,77 @@ private fun MainScreen(sharedText: String) {
                     if (current != null) {
                         val format = if (mediaMode == "audio") current.audioId else (selectedVideo?.id ?: current.videos.firstOrNull()?.id)
                         if (format.isNullOrBlank()) message = "Please select an available format first."
-                        else scope.launch {
-                            busy = true
-                            message = withContext(Dispatchers.IO) {
-                                startDownload(context, url, current.title, format, mediaMode, selectedAudio?.bitrate ?: 128)
+                        else {
+                            val targetName = safeFileName(current.title, if (mediaMode == "audio") ".mp3" else ".mp4")
+                            val duplicate = downloads.firstOrNull { it.title.equals(targetName, true) && it.state != "Failed" }
+                            if (duplicate != null) overwriteTarget = duplicate
+                            else scope.launch {
+                                busy = true
+                                message = withContext(Dispatchers.IO) { startDownload(context, url, current.title, format, mediaMode, selectedAudio?.bitrate ?: 128) }
+                                busy = false
+                                refresh()
+                                tab = "Downloads"
                             }
-                            busy = false; refresh()
                         }
                     }
                 },
                 downloads = downloads, onAll = { tab = "Downloads" }
             )
-            "Downloads", "History" -> DownloadsScreen(downloads, tab == "History", Modifier.padding(padding), onOpen = { selectedFile = it; tab = "Player" }, onRefresh = { refresh() })
+            "Downloads", "History" -> DownloadsScreen(
+                downloads, tab == "History", Modifier.padding(padding),
+                onOpen = { selectedFile = it; tab = "Player" },
+                onDelete = { item -> (context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager).remove(item.id); refresh() },
+                onRename = { item -> renameTarget = item; renameText = item.title },
+                onRefresh = { refresh() }
+            )
             "Player" -> PlayerScreen(downloads, selectedFile, Modifier.padding(padding), onSelect = { selectedFile = it })
             else -> SettingsScreen(dark, { dark = it }, Modifier.padding(padding))
         }
+        if (overwriteTarget != null) {
+            AlertDialog(
+                onDismissRequest = { overwriteTarget = null },
+                title = { Text("File already exists") },
+                text = { Text("This file already exists. Do you want to overwrite it?") },
+                confirmButton = {
+                    TextButton(onClick = {
+                        val old = overwriteTarget
+                        overwriteTarget = null
+                        if (old != null) scope.launch {
+                            busy = true
+                            withContext(Dispatchers.IO) { (context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager).remove(old.id) }
+                            val current = info
+                            val format = if (mediaMode == "audio") current?.audioId else (selectedVideo?.id ?: current?.videos?.firstOrNull()?.id)
+                            if (current != null && !format.isNullOrBlank()) {
+                                message = withContext(Dispatchers.IO) { startDownload(context, url, current.title, format, mediaMode, selectedAudio?.bitrate ?: 128) }
+                                tab = "Downloads"
+                            }
+                            busy = false
+                            refresh()
+                        }
+                    }) { Text("Overwrite") }
+                },
+                dismissButton = { TextButton(onClick = { overwriteTarget = null }) { Text("Cancel") } }
+            )
+        }
+        if (renameTarget != null) {
+            AlertDialog(
+                onDismissRequest = { renameTarget = null },
+                title = { Text("Rename file") },
+                text = { OutlinedTextField(value = renameText, onValueChange = { renameText = it }, singleLine = true, label = { Text("File name") }) },
+                confirmButton = {
+                    TextButton(onClick = {
+                        val target = renameTarget
+                        renameTarget = null
+                        if (target != null) {
+                            actionMessage = if (renameDownloadedFile(target, renameText)) "File renamed." else "Android could not rename this file. Storage access may be restricted."
+                            refresh()
+                        }
+                    }) { Text("Save") }
+                },
+                dismissButton = { TextButton(onClick = { renameTarget = null }) { Text("Cancel") } }
+            )
+        }
+        if (actionMessage.isNotBlank()) AlertDialog(onDismissRequest = { actionMessage = "" }, confirmButton = { TextButton(onClick = { actionMessage = "" }) { Text("OK") } }, text = { Text(actionMessage) })
     }
 }
 
