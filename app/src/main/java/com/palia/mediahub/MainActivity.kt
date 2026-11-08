@@ -226,7 +226,7 @@ private fun HomeScreen(
                             val active = platform.equals(name, true)
                             Surface(modifier = Modifier.weight(1f).clickable { onPlatform(name) }, color = if (active) PaleMint else Color(0xFFF7FAF8), shape = RoundedCornerShape(13.dp), border = androidx.compose.foundation.BorderStroke(if (active) 1.5.dp else 1.dp, if (active) Mint else Color(0xFFE3EEE8))) {
                                 Column(Modifier.padding(vertical = 11.dp, horizontal = 2.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Text(platformMark(name), color = DeepMint, fontWeight = FontWeight.Black, fontSize = 19.sp)
+                                    BrandPlatformIcon(name, modifier = Modifier.size(30.dp))
                                     Text(name, color = Ink, fontWeight = FontWeight.SemiBold, fontSize = 9.sp, maxLines = 1)
                                 }
                             }
@@ -463,5 +463,41 @@ private fun detectPlatform(raw: String): String? {
         else -> null
     }
 }
-private fun platformMark(name: String) = when (name) { "Facebook" -> "f"; "Instagram" -> "◎"; "Threads" -> "@"; "TikTok" -> "♪"; "X" -> "X"; "Reddit" -> "r/"; else -> "P" }
+@Composable
+private fun BrandPlatformIcon(name: String, modifier: Modifier = Modifier) {
+    val brand = when (name) {
+        "Facebook" -> Color(0xFF0866FF)
+        "Instagram" -> Color(0xFFE1306C)
+        "Threads" -> Color(0xFF101010)
+        "TikTok" -> Color(0xFF111111)
+        "X" -> Color(0xFF111111)
+        "Reddit" -> Color(0xFFFF4500)
+        else -> Color(0xFFBD081C)
+    }
+    Box(modifier, contentAlignment = Alignment.Center) {
+        when (name) {
+            "Instagram" -> androidx.compose.foundation.Canvas(Modifier.size(26.dp)) {
+                val stroke = 2.5.dp.toPx()
+                drawRoundRect(color = brand, style = androidx.compose.ui.graphics.drawscope.Stroke(stroke), cornerRadius = androidx.compose.ui.geometry.CornerRadius(size.width * .28f))
+                drawCircle(brand, radius = size.minDimension * .19f, style = androidx.compose.ui.graphics.drawscope.Stroke(stroke), center = center)
+                drawCircle(brand, radius = size.minDimension * .055f, center = androidx.compose.ui.geometry.Offset(size.width * .73f, size.height * .27f))
+            }
+            "Reddit" -> androidx.compose.foundation.Canvas(Modifier.size(28.dp)) {
+                drawCircle(Color(0xFFFF4500), radius = size.minDimension * .46f)
+                drawCircle(Color.White, radius = size.minDimension * .055f, center = androidx.compose.ui.geometry.Offset(size.width * .36f, size.height * .48f))
+                drawCircle(Color.White, radius = size.minDimension * .055f, center = androidx.compose.ui.geometry.Offset(size.width * .64f, size.height * .48f))
+                drawArc(Color.White, 15f, 150f, false, topLeft = androidx.compose.ui.geometry.Offset(size.width*.29f,size.height*.47f), size = androidx.compose.ui.geometry.Size(size.width*.42f,size.height*.30f), style = androidx.compose.ui.graphics.drawscope.Stroke(2.dp.toPx()))
+            }
+            "TikTok" -> Box(contentAlignment = Alignment.Center) {
+                Text("♪", color = Color(0xFF25F4EE), fontSize = 29.sp, fontWeight = FontWeight.Black, modifier = Modifier.offset(x = (-1).dp, y = 1.dp))
+                Text("♪", color = Color(0xFFFE2C55), fontSize = 29.sp, fontWeight = FontWeight.Black, modifier = Modifier.offset(x = 1.dp, y = (-1).dp))
+                Text("♪", color = Color.Black, fontSize = 29.sp, fontWeight = FontWeight.Black)
+            }
+            "Facebook" -> Text("f", color = brand, fontSize = 31.sp, fontWeight = FontWeight.Black)
+            "Threads" -> Text("@", color = brand, fontSize = 27.sp, fontWeight = FontWeight.Medium)
+            "X" -> Text("𝕏", color = brand, fontSize = 25.sp, fontWeight = FontWeight.Bold)
+            else -> Text("P", color = brand, fontSize = 29.sp, fontWeight = FontWeight.Black, fontFamily = androidx.compose.ui.text.font.FontFamily.Serif)
+        }
+    }
+}
 private fun formatBytes(bytes: Long): String = if (bytes < 1024L * 1024L) "${bytes / 1024} KB" else String.format("%.1f MB", bytes / 1024.0 / 1024.0)
