@@ -17,6 +17,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -63,10 +64,10 @@ private data class MediaInfo(
     val duration: Int,
     val platform: String,
     val videos: List<MediaFormat>,
-    val audioId: String?
+    val audioFormats: List<AudioChoice>
 )
-private data class AudioChoice(val bitrate: Int, val label: String)
-private data class LocalDownload(val id: Long, val title: String, val state: String, val uri: Uri?)
+private data class AudioChoice(val id: String, val bitrate: Int, val label: String, val size: Long?)
+private data class LocalDownload(val id: Long, val title: String, val state: String, val uri: Uri?, val downloaded: Long = 0L, val total: Long = -1L)
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -168,7 +169,7 @@ private fun MainScreen(sharedText: String) {
                 onDownload = {
                     val current = info
                     if (current != null) {
-                        val format = if (mediaMode == "audio") current.audioId else (selectedVideo?.id ?: current.videos.firstOrNull()?.id)
+                        val format = if (mediaMode == "audio") selectedAudio?.id else (selectedVideo?.id ?: current.videos.firstOrNull()?.id)
                         if (format.isNullOrBlank()) message = "Please select an available format first."
                         else {
                             val targetName = safeFileName(current.title, if (mediaMode == "audio") ".mp3" else ".mp4")
@@ -209,7 +210,7 @@ private fun MainScreen(sharedText: String) {
                             busy = true
                             withContext(Dispatchers.IO) { (context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager).remove(old.id) }
                             val current = info
-                            val format = if (mediaMode == "audio") current?.audioId else (selectedVideo?.id ?: current?.videos?.firstOrNull()?.id)
+                            val format = if (mediaMode == "audio") selectedAudio?.id else (selectedVideo?.id ?: current?.videos?.firstOrNull()?.id)
                             if (current != null && !format.isNullOrBlank()) {
                                 message = withContext(Dispatchers.IO) { startDownload(context, url, current.title, format, mediaMode, selectedAudio?.bitrate ?: 128) }
                                 tab = "Downloads"
@@ -252,11 +253,12 @@ private fun HomeScreen(
     onSelectAudio: (AudioChoice) -> Unit, onDownload: () -> Unit, downloads: List<LocalDownload>, onAll: () -> Unit
 ) {
     val platforms = listOf("Facebook", "Instagram", "Threads", "TikTok", "X", "Reddit", "Pinterest")
-    val audioChoices = listOf(AudioChoice(48, "48 kbps · MP3"), AudioChoice(128, "128 kbps · MP3"), AudioChoice(256, "256 kbps · MP3"), AudioChoice(320, "320 kbps · MP3"))
-    LazyColumn(modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 22.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+    val listState = rememberLazyListState()
+    LaunchedEffect(info) { if (info != null) listState.animateScrollToItem(4) }
+    LazyColumn(state = listState, modifier = modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 22.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         item {
             Row(Modifier.fillMaxWidth().background(Color.White).padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                Box(Modifier.size(54.dp).background(PaleMint, RoundedCornerShape(17.dp)), contentAlignment = Alignment.Center) { Text("M", color = DeepMint, fontSize = 36.sp, fontWeight = FontWeight.Black) }
+                Image(painterResource(R.drawable.brand_mark), contentDescription = "Mint Mind logo", modifier = Modifier.size(58.dp))
                 Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f)) {
                     Text("Mint Mind", color = Ink, fontSize = 25.sp, fontWeight = FontWeight.Black)
@@ -343,15 +345,18 @@ private fun HomeScreen(
                         }
                     } else {
                         Text("Audio quality", color = Ink, fontWeight = FontWeight.Bold)
-                        if (info.audioId == null) Text("Audio format is not available for this link.", color = Muted, fontSize = 12.sp)
-                        audioChoices.forEach { choice ->
+                        if (info.audioFormats.isEmpty()) Text("Audio format is not available for this link.", color = Muted, fontSize = 12.sp)
+                        info.audioFormats.forEach { choice ->
                             Row(Modifier.fillMaxWidth().clickable { onSelectAudio(choice) }.padding(vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-                                RadioButton(selectedAudio?.bitrate == choice.bitrate, onClick = { onSelectAudio(choice) }, colors = RadioButtonDefaults.colors(selectedColor = DeepMint))
-                                Text(choice.label, color = Ink, fontWeight = FontWeight.SemiBold)
+                                RadioButton(selectedAudio?.id == choice.id, onClick = { onSelectAudio(choice) }, colors = RadioButtonDefaults.colors(selectedColor = DeepMint))
+                                Column(Modifier.weight(1f)) {
+                                    Text(choice.label, color = Ink, fontWeight = FontWeight.SemiBold)
+                                    Text(choice.size?.let { formatBytes(it) } ?: "Size unavailable", color = Muted, fontSize = 11.sp)
+                                }
                             }
                         }
                     }
-                    Button(onClick = onDownload, enabled = !busy && if (mode == "video") (selectedVideo != null || info.videos.isNotEmpty()) else info.audioId != null && selectedAudio != null, modifier = Modifier.fillMaxWidth().height(52.dp), colors = ButtonDefaults.buttonColors(containerColor = Mint), shape = RoundedCornerShape(15.dp)) {
+                    Button(onClick = onDownload, enabled = !busy && if (mode == "video") (selectedVideo != null || info.videos.isNotEmpty()) else info.audioFormats.isNotEmpty() && selectedAudio != null, modifier = Modifier.fillMaxWidth().height(52.dp), colors = ButtonDefaults.buttonColors(containerColor = Mint), shape = RoundedCornerShape(15.dp)) {
                         Icon(Icons.Default.Download, null); Spacer(Modifier.width(8.dp)); Text(if (mode == "audio") "Download MP3" else "Download Video", fontWeight = FontWeight.Bold)
                     }
                 }
@@ -488,16 +493,23 @@ private fun fetchInfo(raw: String): Pair<MediaInfo?, String> {
                 if (id.isBlank() || id == "null") continue
                 val height = f.optInt("height", 0)
                 val ext = f.optString("ext", "")
-                val label = (if (height > 0) "${height}p" else "Video") + if (ext.isNotBlank()) " · ${ext.uppercase()}" else ""
+                val label = f.optString("label").takeIf { it.isNotBlank() && it != "null" } ?: ((if (height > 0) "${height}p" else "Video") + if (ext.isNotBlank()) " · ${ext.uppercase()}" else "")
                 val size = if (f.has("filesize") && !f.isNull("filesize")) f.optLong("filesize") else if (f.has("filesize_approx")) f.optLong("filesize_approx") else 0L
                 videoList.add(MediaFormat(id, label, size.takeIf { it > 0 }, ext))
             }
             val audioArray = json.optJSONArray("audio_formats")
-            var audioId: String? = null
-            if (audioArray != null && audioArray.length() > 0) audioId = audioArray.optJSONObject(0)?.optString("format_id")?.takeIf { !it.isNullOrBlank() && it != "null" }
-            if (audioId == null) audioId = videoList.firstOrNull()?.id
+            val audioList = mutableListOf<AudioChoice>()
+            if (audioArray != null) for (i in 0 until audioArray.length()) {
+                val f = audioArray.optJSONObject(i) ?: continue
+                val id = f.optString("format_id")
+                if (id.isBlank() || id == "null") continue
+                val bitrate = f.optDouble("abr", 128.0).toInt().coerceIn(28, 320)
+                val size = if (f.has("filesize") && !f.isNull("filesize")) f.optLong("filesize").takeIf { it > 0 } else null
+                val label = f.optString("label").takeIf { it.isNotBlank() && it != "null" } ?: (f.optString("ext", "Audio").uppercase() + " · " + bitrate + " kbps")
+                audioList.add(AudioChoice(id, bitrate, label, size))
+            }
             val duration = json.optDouble("duration", 0.0).toInt()
-            MediaInfo(json.optString("title", "Mint Mind video"), json.optString("thumbnail", ""), duration, json.optString("extractor", platform), videoList.distinctBy { it.id }, audioId) to "Video found. Choose a format to continue."
+            MediaInfo(json.optString("title", "Mint Mind video"), json.optString("thumbnail", ""), duration, json.optString("extractor", platform), videoList.distinctBy { it.id }, audioList.distinctBy { it.id }) to "Video found. Choose a format to continue."
         }
     } catch (e: Exception) { null to "Connection error: ${e.localizedMessage ?: "Please try again."}" }
 }
