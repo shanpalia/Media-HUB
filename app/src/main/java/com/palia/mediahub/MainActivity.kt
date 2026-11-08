@@ -149,8 +149,11 @@ private fun MainScreen(sharedText: String) {
                     scope.launch {
                         busy = true; message = "Checking public video link…"; resetResult()
                         val result = withContext(Dispatchers.IO) { fetchInfo(url) }
-                        info = result.first; message = result.second; busy = false
-                        if (result.first != null) mediaMode = if (result.first.audioId != null) "video" else "video"
+                        val loadedInfo = result.first
+                        info = loadedInfo
+                        message = result.second
+                        busy = false
+                        if (loadedInfo != null) mediaMode = "video"
                     }
                 },
                 onSelectVideo = { selectedVideo = it; selectedAudio = null; mediaMode = "video" },
