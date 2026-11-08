@@ -72,6 +72,9 @@ def ydl_options():
         "fragment_retries": 2,
         "retries": 2,
         "socket_timeout": 15,
+        # Prefer public/embed-capable clients that do not require account cookies.
+        # YouTube may still reject cloud-hosted IPs; this is a best-effort fallback.
+        "extractor_args": {"youtube": {"player_client": ["web_embedded", "android_vr"]}},
     }
 
 @app.get("/health")
