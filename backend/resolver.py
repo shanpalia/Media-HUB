@@ -151,6 +151,30 @@ def info(url: str = Query(..., min_length=8, max_length=2048)):
         raise HTTPException(422, "Video could not be resolved. It may be private, login-only, restricted, unsupported, or temporarily unavailable. " + message)
 
 
+@app.get("/preview")
+def preview(url: str = Query(..., min_length=8, max_length=2048)):
+    """Return a playable direct media URL for the in-page HTML5 preview."""
+    url = resolve_redirect(validate_url(url))
+    try:
+        with yt_dlp.YoutubeDL(ydl_options()) as ydl:
+            data = ydl.extract_info(url, download=False)
+        if not data:
+            raise HTTPException(422, "Preview is unavailable for this video")
+        formats = data.get("formats", [])
+        # Prefer a progressive MP4 with both audio and video, then any progressive format.
+        candidates = [f for f in formats if f.get("url") and f.get("vcodec") != "none" and f.get("acodec") != "none"]
+        candidates.sort(key=lambda f: (f.get("ext") == "mp4", f.get("height") or 0), reverse=True)
+        if not candidates:
+            raise HTTPException(422, "This source has no directly playable combined audio/video stream")
+        from fastapi.responses import RedirectResponse
+        return RedirectResponse(candidates[0]["url"], status_code=302, headers={"Cache-Control": "no-store"})
+    except HTTPException:
+        raise
+    except Exception as e:
+        message = str(e).splitlines()[0][:180]
+        raise HTTPException(422, "Preview unavailable. " + message)
+
+
 @app.get("/download")
 def download(
     url: str = Query(..., min_length=8, max_length=2048),
