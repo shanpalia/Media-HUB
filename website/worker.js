@@ -6,7 +6,18 @@ const PAGE = `<!doctype html>
 <script src="https://quge5.com/88/tag.min.js" data-zone="307495" async data-cfasync="false"></script>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#e8fff7">
-<meta name="description" content="Mint Mind by PaliaAPK HUB — all-in-one public video downloader.">
+<meta name="description" content="Mint Mind by PaliaAPK HUB is an all-in-one online video downloader for supported public links from Facebook, Instagram, Threads, TikTok, X, Reddit and Pinterest.">
+<meta name="robots" content="index, follow, max-image-preview:large">
+<link rel="canonical" href="https://mintmind-3xv.pages.dev/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Mint Mind by PaliaAPK HUB">
+<meta property="og:title" content="Mint Mind – Online Video Downloader | PaliaAPK HUB">
+<meta property="og:description" content="Download supported public videos with Mint Mind by PaliaAPK HUB.">
+<meta property="og:url" content="https://mintmind-3xv.pages.dev/">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Mint Mind – Online Video Downloader">
+<meta name="twitter:description" content="Mint Mind by PaliaAPK HUB — all-in-one video downloader.">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Mint Mind","alternateName":"Mint Mind by PaliaAPK HUB","url":"https://mintmind-3xv.pages.dev/","applicationCategory":"MultimediaApplication","operatingSystem":"Any","description":"Online downloader interface for supported public video links from Facebook, Instagram, Threads, TikTok, X, Reddit and Pinterest.","publisher":{"@type":"Organization","name":"PaliaAPK HUB"},"creator":{"@type":"Person","name":"ShanPalia"}}</script>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='18' fill='%2300a979'/%3E%3Cpath d='M12 49V16l20 18 20-18v33' fill='none' stroke='white' stroke-width='6' stroke-linecap='round'/%3E%3C/svg%3E">
 <title>Mint Mind — By PaliaAPK HUB</title>
 <style>
@@ -137,6 +148,8 @@ function json(data,status=200){return new Response(JSON.stringify(data),{status,
 function validUrl(raw){try{const u=new URL(raw);const h=u.hostname.toLowerCase();return ["facebook.com","fb.com","fb.watch","instagram.com","threads.com","threads.net","tiktok.com","x.com","twitter.com","reddit.com","redd.it","pinterest.com","pin.it"].some(d=>h===d||h.endsWith("."+d))&&["http:","https:"].includes(u.protocol)}catch{return false}}
 export default {async fetch(request){
  const url=new URL(request.url);
+ if(url.pathname==="/robots.txt")return new Response("User-agent: *\\nAllow: /\\nSitemap: https://mintmind-3xv.pages.dev/sitemap.xml\\n",{headers:{"content-type":"text/plain; charset=utf-8","cache-control":"public, max-age=3600"}});
+ if(url.pathname==="/sitemap.xml")return new Response('<?xml version="1.0" encoding="UTF-8"?>\\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>https://mintmind-3xv.pages.dev/</loc><changefreq>weekly</changefreq><priority>1.0</priority></url></urlset>',{headers:{"content-type":"application/xml; charset=utf-8","cache-control":"public, max-age=3600"}});
  if(url.pathname==="/sw.js")return new Response("self.options = {\n    \"domain\": \"5gvci.com\",\n    \"zoneId\": 12218034\n}\nself.lary = \"\"\nimportScripts('https://5gvci.com/act/files/service-worker.min.js?r=sw')\n",{headers:{"content-type":"application/javascript; charset=utf-8","cache-control":"no-cache","service-worker-allowed":"/","x-content-type-options":"nosniff"}});
  if(url.pathname==="/")return new Response(PAGE,{headers:{"content-type":"text/html; charset=utf-8","cache-control":"no-cache","x-content-type-options":"nosniff","referrer-policy":"strict-origin-when-cross-origin"}});
  if(url.pathname==="/health")return json({ok:true,service:"Media HUB Cloudflare frontend"});
