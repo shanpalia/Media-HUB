@@ -163,7 +163,7 @@ def download(
             data = ydl.extract_info(url, download=False)
         title = safe_filename(data.get("title") or "Mint-Mind-video")
         if media_type == "audio":
-            allowed = {str(f.get("format_id")) for f in data.get("formats", []) if f.get("url") and f.get("vcodec") == "none" and f.get("acodec") != "none"}
+            allowed = {str(f.get("format_id")) for f in data.get("formats", []) if f.get("url") and f.get("acodec") != "none"}
         else:
             allowed = {str(f.get("format_id")) for f in data.get("formats", []) if f.get("url") and f.get("vcodec") != "none" and f.get("acodec") != "none"}
         if format_id not in allowed:
