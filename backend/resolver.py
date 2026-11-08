@@ -111,18 +111,20 @@ def info(url: str = Query(..., min_length=8, max_length=2048)):
                 vbr = f.get("vbr")
                 tbr = f.get("tbr")
                 height = f.get("height")
-                # Estimate video-only stream size using its bitrate or a conservative resolution-based fallback.
-                fallback_video_kbps = next((kbps for limit, kbps in [(144, 110), (240, 250), (360, 500), (480, 900), (720, 1800), (1080, 3500), (1440, 6000), (2160, 12000)] if height and height <= limit), 1800 if height else None)
-                stream_kbps = vbr or (tbr if f.get("acodec") == "none" else None) or fallback_video_kbps
+                resolution_label = (str(height) + "p") if height else (f.get("format_note") or f.get("resolution"))
+                # Never invent a resolution or size: list only identifiable formats with a reported or bitrate-derived size.
+                stream_kbps = vbr or (tbr if f.get("acodec") == "none" else None) or (tbr if f.get("acodec") != "none" else None)
                 estimated_video_size = int(size) if size else (int(stream_kbps * duration * 1000 / 8) if stream_kbps and duration else None)
                 audio_size = int(abr * duration * 1000 / 8) if abr and duration else None
                 has_audio = f.get("acodec") != "none"
                 estimated_total = estimated_video_size + (audio_size or 0) if estimated_video_size and has_audio else estimated_video_size
+                if not resolution_label or not estimated_total:
+                    continue
                 formats.append({
                     "format_id": fmt_id, "ext": ext, "height": height,
                     "filesize": estimated_total, "filesize_exact": bool(size), "filesize_estimated": not bool(size), "abr": abr, "vbr": vbr, "tbr": tbr, "fps": f.get("fps"), "has_audio": has_audio,
                     "video_size": estimated_video_size, "audio_size": audio_size,
-                    "label": " · ".join(x for x in [((str(height) + "p") if height else (f.get("format_note") or f.get("resolution"))), ((str(round(f.get("fps"))) + " FPS") if f.get("fps") else None), ext.upper()] if x),
+                    "label": " · ".join(x for x in [resolution_label, ((str(round(f.get("fps"))) + " FPS") if f.get("fps") else None), ext.upper()] if x),
                 })
             elif f.get("vcodec") == "none" and f.get("acodec") != "none" and fmt_id not in seen_audio:
                 seen_audio.add(fmt_id)
@@ -133,6 +135,14 @@ def info(url: str = Query(..., min_length=8, max_length=2048)):
                     "abr": abr, "asr": f.get("asr"),
                     "label": " · ".join(x for x in [ext.upper(), ((str(round(f.get("abr"))) + " kbps") if f.get("abr") else None), ((str(round(f.get("asr") / 1000)) + " kHz") if f.get("asr") else None)] if x),
                 })
+        # Keep one best entry per resolution/container; drop duplicate extractor variants.
+        unique_formats = {}
+        for item in formats:
+            key = (item.get("height"), item.get("ext"))
+            current = unique_formats.get(key)
+            if current is None or (item.get("filesize") or 0) > (current.get("filesize") or 0):
+                unique_formats[key] = item
+        formats = list(unique_formats.values())
         formats.sort(key=lambda x: (x.get("height") or 0, x["format_id"]), reverse=True)
         audio_formats.sort(key=lambda x: (x.get("abr") or 0, x["format_id"]), reverse=True)
         return {
