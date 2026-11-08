@@ -110,11 +110,16 @@ def info(url: str = Query(..., min_length=8, max_length=2048)):
                 abr = f.get("abr")
                 vbr = f.get("vbr")
                 tbr = f.get("tbr")
-                estimated_total = int(size) if size else (int(tbr * duration * 1000 / 8) if tbr and duration else None)
+                height = f.get("height")
+                # Last-resort estimate when the extractor omits both filesize and bitrate.
+                # Typical combined audio/video bitrate by resolution; clearly marked estimated.
+                fallback_video_kbps = next((kbps for limit, kbps in [(144, 110), (240, 250), (360, 500), (480, 900), (720, 1800), (1080, 3500), (1440, 6000), (2160, 12000)] if height and height <= limit), 1800 if height else None)
+                fallback_total_kbps = (fallback_video_kbps or 0) + (abr or 96)
+                estimated_total = int(size) if size else (int(tbr * duration * 1000 / 8) if tbr and duration else (int(fallback_total_kbps * duration * 1000 / 8) if fallback_video_kbps and duration else None))
                 audio_size = int(abr * duration * 1000 / 8) if abr and duration else None
                 formats.append({
                     "format_id": fmt_id, "ext": ext, "height": f.get("height"),
-                    "filesize": estimated_total, "filesize_exact": bool(size), "abr": abr, "vbr": vbr, "tbr": tbr, "fps": f.get("fps"),
+                    "filesize": estimated_total, "filesize_exact": bool(size), "filesize_estimated": not bool(size), "abr": abr, "vbr": vbr, "tbr": tbr, "fps": f.get("fps"),
                     "video_size": max(0, int(estimated_total - audio_size)) if estimated_total and audio_size else None,
                     "audio_size": audio_size,
                     "label": " · ".join(x for x in [((str(f.get("height")) + "p") if f.get("height") else None), ((str(round(f.get("fps"))) + " FPS") if f.get("fps") else None), ext.upper()] if x),
