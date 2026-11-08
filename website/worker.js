@@ -69,7 +69,7 @@ body.dark{--ink:#e5fff5;--muted:#b0d0c4;background:radial-gradient(ellipse at 50
 <section id="downloadPage" class="downloadpage" aria-live="polite">
  <div class="downloadpagehead"><h2>Video Download</h2><button id="backToSearch" class="backbtn">← Back</button></div>
  <div class="filepreview"><img id="pageThumb" alt="Video thumbnail"><div><div id="pageTitle" class="filetitle"></div><div id="pagePlatform" class="fileplatform"></div></div></div>
- <div class="source-path"><icon class="path-icon" aria-hidden="true">⬇</icon><div><span>Save location</span><strong>Device / Download / Mint Mind</strong></div></div>
+ <div class="source-path"><span class="path-icon" aria-hidden="true">⬇</span><div><span>Save location</span><strong>Device / Download / Mint Mind</strong></div></div>
  <section class="choice-section"><h3>🔴 Music</h3><div id="audioOptions" class="choice-grid" role="radiogroup" aria-label="Music format options"></div></section>
  <section class="choice-section"><h3>▶ Video</h3><div id="videoOptions" class="choice-grid" role="radiogroup" aria-label="Video quality options"></div></section>
  <div class="selected-summary"><span id="selectedSummary">Select an audio or video option</span><strong id="selectedSize">—</strong></div>
