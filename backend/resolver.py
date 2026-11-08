@@ -93,32 +93,38 @@ def info(url: str = Query(..., min_length=8, max_length=2048)):
         if not data:
             raise HTTPException(422, "Could not read this public video")
 
-        # Offer only progressive formats (video + audio in one file). This avoids
-        # requiring a server-side ffmpeg merge and ensures the downloaded file is playable.
-        formats = []
-        seen = set()
+        # Video choices must contain both audio and video; audio choices are audio-only.
+        formats, audio_formats = [], []
+        seen_video, seen_audio = set(), set()
         for f in data.get("formats", []):
-            if not f.get("url") or f.get("vcodec") == "none" or f.get("acodec") == "none":
+            if not f.get("url"):
                 continue
             fmt_id = str(f.get("format_id") or "")
-            if not fmt_id or fmt_id in seen:
+            if not fmt_id:
                 continue
-            seen.add(fmt_id)
-            formats.append({
-                "format_id": fmt_id,
-                "ext": f.get("ext") or "mp4",
-                "height": f.get("height"),
-                "filesize": f.get("filesize") or f.get("filesize_approx"),
-                "abr": f.get("abr"),
-                "vbr": f.get("vbr"),
-                "fps": f.get("fps"),
-                "video_size": (max(0, int((f.get("filesize") or f.get("filesize_approx") or 0) - ((f.get("abr") or 0) * (data.get("duration") or 0) * 1000 / 8))) if (f.get("filesize") or f.get("filesize_approx")) else None),
-                "audio_size": (int((f.get("abr") or 0) * (data.get("duration") or 0) * 1000 / 8) if f.get("abr") and data.get("duration") else None),
-                "label": " · ".join(x for x in [((str(f.get("height")) + "p") if f.get("height") else None), ((str(round(f.get("fps"))) + " FPS") if f.get("fps") else None), ((str(round(f.get("vbr"))) + " kbps") if f.get("vbr") else None), (f.get("ext") or "mp4").upper()] if x),
-            })
+            size = f.get("filesize") or f.get("filesize_approx")
+            ext = f.get("ext") or "audio"
+            if f.get("vcodec") != "none" and f.get("acodec") != "none" and fmt_id not in seen_video:
+                seen_video.add(fmt_id)
+                abr = f.get("abr")
+                duration = data.get("duration") or 0
+                audio_size = int(abr * duration * 1000 / 8) if abr and duration else None
+                formats.append({
+                    "format_id": fmt_id, "ext": ext, "height": f.get("height"),
+                    "filesize": size, "abr": abr, "vbr": f.get("vbr"), "fps": f.get("fps"),
+                    "video_size": max(0, int(size - audio_size)) if size and audio_size else None,
+                    "audio_size": audio_size,
+                    "label": " · ".join(x for x in [((str(f.get("height")) + "p") if f.get("height") else None), ((str(round(f.get("fps"))) + " FPS") if f.get("fps") else None), ext.upper()] if x),
+                })
+            elif f.get("vcodec") == "none" and f.get("acodec") != "none" and fmt_id not in seen_audio:
+                seen_audio.add(fmt_id)
+                audio_formats.append({
+                    "format_id": fmt_id, "ext": ext, "filesize": size,
+                    "abr": f.get("abr"), "asr": f.get("asr"),
+                    "label": " · ".join(x for x in [ext.upper(), ((str(round(f.get("abr"))) + " kbps") if f.get("abr") else None), ((str(round(f.get("asr") / 1000)) + " kHz") if f.get("asr") else None)] if x),
+                })
         formats.sort(key=lambda x: (x.get("height") or 0, x["format_id"]), reverse=True)
-        if not formats:
-            formats = [{"format_id": "best[ext=mp4]/best", "ext": "mp4", "height": None, "filesize": None, "label": "Best available"}]
+        audio_formats.sort(key=lambda x: (x.get("abr") or 0, x["format_id"]), reverse=True)
         return {
             "ok": True,
             "title": data.get("title") or "Video",
@@ -126,6 +132,7 @@ def info(url: str = Query(..., min_length=8, max_length=2048)):
             "duration": data.get("duration"),
             "extractor": data.get("extractor_key"),
             "formats": formats[:20],
+            "audio_formats": audio_formats[:20],
         }
     except HTTPException:
         raise
@@ -138,19 +145,23 @@ def info(url: str = Query(..., min_length=8, max_length=2048)):
 def download(
     url: str = Query(..., min_length=8, max_length=2048),
     format_id: str = Query("best[ext=mp4]/best", min_length=1, max_length=80),
+    media_type: str = Query("video", pattern="^(video|audio)$"),
 ):
     url = resolve_redirect(validate_url(url))
     # Format IDs are selected from /info. Reject command-line syntax and arbitrary expressions.
-    if format_id != "best[ext=mp4]/best" and not re.fullmatch(r"[A-Za-z0-9._-]{1,40}", format_id):
+    if not re.fullmatch(r"[A-Za-z0-9._-]{1,40}", format_id):
         raise HTTPException(400, "Invalid video quality selection")
 
     try:
         with yt_dlp.YoutubeDL(ydl_options()) as ydl:
             data = ydl.extract_info(url, download=False)
         title = safe_filename(data.get("title") or "Mint-Mind-video")
-        allowed = {str(f.get("format_id")) for f in data.get("formats", []) if f.get("url") and f.get("vcodec") != "none" and f.get("acodec") != "none"}
-        if format_id != "best[ext=mp4]/best" and format_id not in allowed:
-            raise HTTPException(400, "That quality is no longer available. Please check the video again.")
+        if media_type == "audio":
+            allowed = {str(f.get("format_id")) for f in data.get("formats", []) if f.get("url") and f.get("vcodec") == "none" and f.get("acodec") != "none"}
+        else:
+            allowed = {str(f.get("format_id")) for f in data.get("formats", []) if f.get("url") and f.get("vcodec") != "none" and f.get("acodec") != "none"}
+        if format_id not in allowed:
+            raise HTTPException(400, "That format is no longer available. Please check the video again.")
     except HTTPException:
         raise
     except Exception as e:
@@ -180,11 +191,11 @@ def download(
         if not files:
             raise RuntimeError("Downloader did not create an output file")
         path = files[0]
-        ext = path.suffix.lower() or ".mp4"
-        media_type = "video/mp4" if ext == ".mp4" else "video/" + ext.lstrip(".")
+        ext = path.suffix.lower() or (".m4a" if media_type == "audio" else ".mp4")
+        response_type = ("audio/" + ext.lstrip(".")) if media_type == "audio" else ("video/mp4" if ext == ".mp4" else "video/" + ext.lstrip("."))
         return FileResponse(
             path,
-            media_type=media_type,
+            media_type=response_type,
             filename=title + ext,
             headers={"Cache-Control": "no-store", "X-Content-Type-Options": "nosniff"},
             background=BackgroundTask(shutil.rmtree, tmpdir, ignore_errors=True),
