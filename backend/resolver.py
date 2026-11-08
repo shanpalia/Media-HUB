@@ -129,7 +129,7 @@ def download(url: str = Query(..., min_length=8, max_length=2048)):
     command = [
         "yt-dlp", "--quiet", "--no-warnings", "--no-progress", "--no-playlist",
         "-f", "best[ext=mp4]/best",
-        "-o", "-", "--socket-timeout", "20", url,
+        "-o", "-", "--socket-timeout", "20", "--extractor-args", "youtube:player_client=web_embedded,android_vr", url,
     ]
     try:
         process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
