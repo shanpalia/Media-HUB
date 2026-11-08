@@ -404,6 +404,12 @@ private fun DownloadsScreen(
     onOpen: (LocalDownload) -> Unit, onDelete: (LocalDownload) -> Unit,
     onRename: (LocalDownload) -> Unit, onRefresh: () -> Unit
 ) {
+    LaunchedEffect(history) {
+        while (true) {
+            kotlinx.coroutines.delay(1000)
+            onRefresh()
+        }
+    }
     Column(modifier.fillMaxSize().padding(16.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(Icons.Default.Folder, null, tint = DeepMint, modifier = Modifier.size(25.dp))
@@ -432,7 +438,20 @@ private fun DownloadRow(
         Spacer(Modifier.width(10.dp))
         Column(Modifier.weight(1f).clickable(enabled = item.uri != null && item.state == "Completed", onClick = onClick)) {
             Text(item.title, color = Ink, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Text(item.state, color = Muted, fontSize = 11.sp)
+            Text(
+                if (item.total > 0L && item.state != "Completed") "${item.state} · ${((item.downloaded * 100) / item.total).coerceIn(0, 100)}% · ${formatBytes(item.downloaded)} / ${formatBytes(item.total)}"
+                else if (item.downloaded > 0L && item.state != "Completed") "${item.state} · ${formatBytes(item.downloaded)}"
+                else item.state,
+                color = Muted, fontSize = 11.sp
+            )
+            if (item.state == "Downloading" || item.state == "Queued" || item.state == "Paused") {
+                Spacer(Modifier.height(5.dp))
+                LinearProgressIndicator(
+                    progress = { if (item.total > 0L) (item.downloaded.toFloat() / item.total).coerceIn(0f, 1f) else 0f },
+                    modifier = Modifier.fillMaxWidth().height(4.dp),
+                    color = Mint, trackColor = PaleMint
+                )
+            }
         }
         if (item.state == "Completed") {
             IconButton(onClick = onClick) { Icon(Icons.Default.PlayCircle, "Play", tint = DeepMint) }
@@ -565,6 +584,8 @@ private fun readDownloads(context: Context): List<LocalDownload> {
         val titleCol = it.getColumnIndex(DownloadManager.COLUMN_TITLE)
         val statusCol = it.getColumnIndex(DownloadManager.COLUMN_STATUS)
         val uriCol = it.getColumnIndex(DownloadManager.COLUMN_LOCAL_URI)
+        val downloadedCol = it.getColumnIndex(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR)
+        val totalCol = it.getColumnIndex(DownloadManager.COLUMN_TOTAL_SIZE_BYTES)
         while (it.moveToNext()) {
             val state = when (it.getInt(statusCol)) {
                 DownloadManager.STATUS_SUCCESSFUL -> "Completed"
@@ -574,7 +595,11 @@ private fun readDownloads(context: Context): List<LocalDownload> {
                 else -> "Queued"
             }
             val local = if (uriCol >= 0) it.getString(uriCol) else null
-            result.add(LocalDownload(it.getLong(idCol), it.getString(titleCol) ?: "Media file", state, local?.let(Uri::parse)))
+            result.add(LocalDownload(
+                it.getLong(idCol), it.getString(titleCol) ?: "Media file", state, local?.let(Uri::parse),
+                if (downloadedCol >= 0) it.getLong(downloadedCol) else 0L,
+                if (totalCol >= 0) it.getLong(totalCol) else -1L
+            ))
         }
     }
     return result.reversed()
