@@ -161,6 +161,7 @@ private fun MainScreen(sharedText: String) {
                         if (loadedInfo != null) {
                             mediaMode = "video"
                             selectedVideo = loadedInfo.videos.firstOrNull()
+                            selectedAudio = loadedInfo.audioFormats.firstOrNull()
                         }
                     }
                 },
