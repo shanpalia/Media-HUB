@@ -485,7 +485,7 @@ private fun startDownload(context: Context, raw: String, title: String, formatId
             .appendQueryParameter("media_type", mediaType)
             .apply { if (mediaType == "audio") appendQueryParameter("audio_bitrate", bitrate.toString()) }
             .build()
-        val filename = URLUtil.guessFileName(title + if (mediaType == "audio") ".mp3" else ".mp4", null, if (mediaType == "audio") "audio/mpeg" else "video/mp4")
+        val filename = safeFileName(title, if (mediaType == "audio") ".mp3" else ".mp4")
         val request = DownloadManager.Request(uri).setTitle(filename).setDescription("Mint Mind · By PaliaAPK HUB")
             .setMimeType(if (mediaType == "audio") "audio/mpeg" else "video/mp4")
             .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
@@ -494,6 +494,28 @@ private fun startDownload(context: Context, raw: String, title: String, formatId
         (context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager).enqueue(request)
         "Download started. Check the Downloads tab or notification."
     } catch (e: Exception) { "Download error: ${e.localizedMessage ?: "Could not start download."}" }
+}
+
+private fun safeFileName(title: String, extension: String): String {
+    val clean = title.replace(Regex("[\\\\/:*?\\"<>|\\\\r\\\\n]"), " ")
+        .replace(Regex("\\s+"), " ").trim().trim('.')
+        .take(100).ifBlank { "Mint Mind video" }
+    return clean.removeSuffix(".mp4").removeSuffix(".mp3") + extension
+}
+
+private fun renameDownloadedFile(item: LocalDownload, requestedName: String): Boolean {
+    return try {
+        val oldUri = item.uri ?: return false
+        if (oldUri.scheme != "file") return false
+        val oldFile = java.io.File(oldUri.path ?: return false)
+        val extension = oldFile.extension.takeIf { it.isNotBlank() }?.let { ".$it" }.orEmpty()
+        val base = requestedName.trim().removeSuffix(extension)
+            .replace(Regex("[\\\\/:*?\\"<>|]"), "_").take(100)
+        if (base.isBlank()) return false
+        val newFile = java.io.File(oldFile.parentFile, base + extension)
+        if (newFile.exists()) return false
+        oldFile.renameTo(newFile)
+    } catch (_: Exception) { false }
 }
 
 private fun readDownloads(context: Context): List<LocalDownload> {
