@@ -12,6 +12,7 @@ import android.webkit.URLUtil
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -28,6 +29,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -94,9 +96,7 @@ private fun MintMindApp(sharedText: String) {
 @Composable
 private fun Splash() {
     Column(Modifier.fillMaxSize().background(Color.White), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-        Box(Modifier.size(112.dp).background(PaleMint, RoundedCornerShape(32.dp)), contentAlignment = Alignment.Center) {
-            Text("M", color = DeepMint, fontSize = 76.sp, fontWeight = FontWeight.Black)
-        }
+        Image(painterResource(R.drawable.brand_mark), contentDescription = "Mint Mind logo", modifier = Modifier.size(124.dp))
         Spacer(Modifier.height(18.dp))
         Text("Mint Mind", color = Ink, fontSize = 34.sp, fontWeight = FontWeight.Black)
         Text("VIDEO DOWNLOADER", color = DeepMint, fontSize = 13.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
