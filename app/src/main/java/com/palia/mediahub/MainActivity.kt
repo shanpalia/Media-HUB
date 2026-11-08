@@ -208,17 +208,40 @@ private fun HomeScreen(
         }
         item {
             Column(Modifier.fillMaxWidth().padding(horizontal = 14.dp).background(PaleMint, RoundedCornerShape(24.dp)).padding(18.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                Text("Download Videos & Music", color = Ink, fontSize = 24.sp, fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Center)
-                Text("Paste a supported public link and choose your format.", color = Muted, fontSize = 13.sp, textAlign = TextAlign.Center)
-                Spacer(Modifier.height(14.dp))
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    listOf("Fast", "HD options", "No login").forEach { label -> Surface(color = Color.White, shape = CircleShape) { Text(label, Modifier.padding(horizontal = 11.dp, vertical = 8.dp), color = DeepMint, fontSize = 11.sp, fontWeight = FontWeight.Bold) } }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.Download, null, tint = DeepMint, modifier = Modifier.size(24.dp))
+                    Spacer(Modifier.width(9.dp))
+                    Column {
+                        Text("Download Video", color = Ink, fontSize = 21.sp, fontWeight = FontWeight.ExtraBold)
+                        Text("Paste a public link to continue", color = Muted, fontSize = 12.sp)
+                    }
                 }
             }
         }
         item {
             Column(Modifier.padding(horizontal = 14.dp).background(Color.White, RoundedCornerShape(22.dp)).padding(15.dp)) {
-                Text("Supported platforms", fontWeight = FontWeight.Bold, color = Ink, fontSize = 17.sp)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.Link, null, tint = DeepMint, modifier = Modifier.size(21.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text("Paste video link", fontSize = 17.sp, fontWeight = FontWeight.Bold, color = Ink)
+                }
+                Spacer(Modifier.height(8.dp))
+                OutlinedTextField(value = url, onValueChange = onUrl, modifier = Modifier.fillMaxWidth(), placeholder = { Text("Paste Facebook, Instagram, TikTok link…") }, leadingIcon = { Icon(Icons.Default.Link, null, tint = DeepMint) }, trailingIcon = { if (url.isNotBlank()) IconButton(onClick = { onUrl("") }) { Icon(Icons.Default.Close, "Clear") } }, shape = RoundedCornerShape(15.dp), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri), singleLine = true)
+                Spacer(Modifier.height(10.dp))
+                Button(onClick = onLoad, enabled = !busy && url.isNotBlank(), modifier = Modifier.fillMaxWidth().height(52.dp), shape = RoundedCornerShape(15.dp), colors = ButtonDefaults.buttonColors(containerColor = DeepMint)) {
+                    if (busy) CircularProgressIndicator(Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp) else Icon(Icons.Default.Download, null)
+                    Spacer(Modifier.width(8.dp)); Text("Download", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                }
+                if (message.isNotBlank()) Text(message, Modifier.padding(top = 10.dp), color = DeepMint, fontSize = 12.sp)
+            }
+        }
+        item {
+            Column(Modifier.padding(horizontal = 14.dp).background(Color.White, RoundedCornerShape(22.dp)).padding(15.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.Public, null, tint = DeepMint, modifier = Modifier.size(21.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text("Supported platforms", fontWeight = FontWeight.Bold, color = Ink, fontSize = 17.sp)
+                }
                 Spacer(Modifier.height(10.dp))
                 platforms.chunked(4).forEach { row ->
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
@@ -235,19 +258,6 @@ private fun HomeScreen(
                     }
                     Spacer(Modifier.height(7.dp))
                 }
-            }
-        }
-        item {
-            Column(Modifier.padding(horizontal = 14.dp).background(Color.White, RoundedCornerShape(22.dp)).padding(15.dp)) {
-                Text("Paste video link", fontSize = 17.sp, fontWeight = FontWeight.Bold, color = Ink)
-                Spacer(Modifier.height(8.dp))
-                OutlinedTextField(value = url, onValueChange = onUrl, modifier = Modifier.fillMaxWidth(), placeholder = { Text("Paste Facebook, Instagram, TikTok link…") }, leadingIcon = { Icon(Icons.Default.Link, null, tint = DeepMint) }, trailingIcon = { if (url.isNotBlank()) IconButton(onClick = { onUrl("") }) { Icon(Icons.Default.Close, "Clear") } }, shape = RoundedCornerShape(15.dp), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri), singleLine = true)
-                Spacer(Modifier.height(10.dp))
-                Button(onClick = onLoad, enabled = !busy && url.isNotBlank(), modifier = Modifier.fillMaxWidth().height(52.dp), shape = RoundedCornerShape(15.dp), colors = ButtonDefaults.buttonColors(containerColor = DeepMint)) {
-                    if (busy) CircularProgressIndicator(Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp) else Icon(Icons.Default.Search, null)
-                    Spacer(Modifier.width(8.dp)); Text("Get Download Options", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                }
-                if (message.isNotBlank()) Text(message, Modifier.padding(top = 10.dp), color = DeepMint, fontSize = 12.sp)
             }
         }
         if (info != null) {
