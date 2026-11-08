@@ -3,6 +3,7 @@ const BACKEND = "https://media-hub-resolver.onrender.com";
 const PAGE = `<!doctype html>
 <html lang="en">
 <head>
+<script src="https://quge5.com/88/tag.min.js" data-zone="307495" async data-cfasync="false"></script>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#e8fff7">
 <meta name="description" content="Mint Mind by PaliaAPK HUB — all-in-one public video downloader.">
