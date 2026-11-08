@@ -5,6 +5,8 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.graphics.Color as AndroidColor
+import androidx.core.view.WindowCompat
 import android.os.Environment
 import android.webkit.URLUtil
 import androidx.activity.ComponentActivity
@@ -68,6 +70,13 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
+        // Keep native content clear of Android status/navigation bars.
+        window.statusBarColor = AndroidColor.rgb(248, 252, 249)
+        window.navigationBarColor = AndroidColor.rgb(255, 255, 255)
+        WindowCompat.getInsetsController(window, window.decorView).apply {
+            isAppearanceLightStatusBars = true
+            isAppearanceLightNavigationBars = true
+        }
         val shared = if (intent?.action == Intent.ACTION_SEND) intent.getStringExtra(Intent.EXTRA_TEXT).orEmpty() else ""
         setContent { MintMindApp(shared) }
     }
