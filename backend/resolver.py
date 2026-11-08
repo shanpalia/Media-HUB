@@ -146,6 +146,7 @@ def download(
     url: str = Query(..., min_length=8, max_length=2048),
     format_id: str = Query("best[ext=mp4]/best", min_length=1, max_length=80),
     media_type: str = Query("video", pattern="^(video|audio)$"),
+    audio_bitrate: int = Query(128, ge=28, le=320),
 ):
     url = resolve_redirect(validate_url(url))
     # Format IDs are selected from /info. Reject command-line syntax and arbitrary expressions.
@@ -184,6 +185,14 @@ def download(
         "overwrites": True,
         "extractor_args": {"youtube": {"player_client": ["web_embedded", "android_vr"]}},
     }
+    if media_type == "audio":
+        opts["postprocessors"] = [{
+            "key": "FFmpegExtractAudio",
+            "preferredcodec": "mp3",
+            "preferredquality": str(audio_bitrate),
+        }]
+        opts["keepvideo"] = False
+
     try:
         with yt_dlp.YoutubeDL(opts) as ydl:
             ydl.download([url])
@@ -191,7 +200,11 @@ def download(
         if not files:
             raise RuntimeError("Downloader did not create an output file")
         path = files[0]
-        ext = path.suffix.lower() or (".m4a" if media_type == "audio" else ".mp4")
+        if media_type == "audio":
+            mp3s = list(Path(tmpdir).glob("*.mp3"))
+            if mp3s:
+                path = mp3s[0]
+        ext = path.suffix.lower() or (".mp3" if media_type == "audio" else ".mp4")
         response_type = ("audio/" + ext.lstrip(".")) if media_type == "audio" else ("video/mp4" if ext == ".mp4" else "video/" + ext.lstrip("."))
         return FileResponse(
             path,
