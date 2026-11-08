@@ -24,6 +24,8 @@ ALLOWED_HOST_SUFFIXES = (
     "facebook.com", "fb.com", "fb.watch",
     "instagram.com",
     "threads.net", "threads.com",
+    "tiktok.com", "x.com", "twitter.com",
+    "reddit.com", "redd.it", "pinterest.com", "pin.it",
 )
 
 def validate_url(raw: str) -> str:
