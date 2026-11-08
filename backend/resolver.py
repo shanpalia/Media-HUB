@@ -70,7 +70,7 @@ def ydl_options():
         "fragment_retries": 2,
         "retries": 2,
         "socket_timeout": 20,
-        "extractor_args": {"youtube": {"player_client": ["web_embedded", "android_vr"]}},
+        "extractor_args": {"youtube": {"player_client": ["mweb", "web_safari"]}, "youtubepot-bgutilscript": {"server_home": "/opt/bgutil-ytdlp-pot-provider/server"}},
     }
 
 
@@ -229,7 +229,7 @@ def download(
         "outtmpl": output_template,
         "merge_output_format": "mp4",
         "overwrites": True,
-        "extractor_args": {"youtube": {"player_client": ["web_embedded", "android_vr"]}},
+        "extractor_args": {"youtube": {"player_client": ["mweb", "web_safari"]}, "youtubepot-bgutilscript": {"server_home": "/opt/bgutil-ytdlp-pot-provider/server"}},
     }
     if media_type == "audio":
         opts["postprocessors"] = [{
