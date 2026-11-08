@@ -109,7 +109,12 @@ def info(url: str = Query(..., min_length=8, max_length=2048)):
                 "ext": f.get("ext") or "mp4",
                 "height": f.get("height"),
                 "filesize": f.get("filesize") or f.get("filesize_approx"),
-                "label": (str(f.get("height")) + "p") if f.get("height") else (f.get("ext") or "Video").upper(),
+                "abr": f.get("abr"),
+                "vbr": f.get("vbr"),
+                "fps": f.get("fps"),
+                "video_size": (max(0, int((f.get("filesize") or f.get("filesize_approx") or 0) - ((f.get("abr") or 0) * (data.get("duration") or 0) * 1000 / 8))) if (f.get("filesize") or f.get("filesize_approx")) else None),
+                "audio_size": (int((f.get("abr") or 0) * (data.get("duration") or 0) * 1000 / 8) if f.get("abr") and data.get("duration") else None),
+                "label": " · ".join(x for x in [((str(f.get("height")) + "p") if f.get("height") else None), ((str(round(f.get("fps"))) + " FPS") if f.get("fps") else None), ((str(round(f.get("vbr"))) + " kbps") if f.get("vbr") else None), (f.get("ext") or "mp4").upper()] if x),
             })
         formats.sort(key=lambda x: (x.get("height") or 0, x["format_id"]), reverse=True)
         if not formats:
