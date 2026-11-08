@@ -522,7 +522,8 @@ private fun startDownload(context: Context, raw: String, title: String, formatId
 }
 
 private fun safeFileName(title: String, extension: String): String {
-    val clean = title.replace(Regex("[\\\\/:*?\\"<>|\\\\r\\\\n]"), " ")
+    val clean = title.replace('\n', ' ').replace('\r', ' ')
+        .replace(Regex("[/:*?<>|]"), " ")
         .replace(Regex("\\s+"), " ").trim().trim('.')
         .take(100).ifBlank { "Mint Mind video" }
     return clean.removeSuffix(".mp4").removeSuffix(".mp3") + extension
@@ -535,7 +536,7 @@ private fun renameDownloadedFile(item: LocalDownload, requestedName: String): Bo
         val oldFile = java.io.File(oldUri.path ?: return false)
         val extension = oldFile.extension.takeIf { it.isNotBlank() }?.let { ".$it" }.orEmpty()
         val base = requestedName.trim().removeSuffix(extension)
-            .replace(Regex("[\\\\/:*?\\"<>|]"), "_").take(100)
+            .replace(Regex("[/:*?<>|]"), "_").take(100)
         if (base.isBlank()) return false
         val newFile = java.io.File(oldFile.parentFile, base + extension)
         if (newFile.exists()) return false
