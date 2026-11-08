@@ -130,7 +130,7 @@ function json(data,status=200){return new Response(JSON.stringify(data),{status,
 function validUrl(raw){try{const u=new URL(raw);const h=u.hostname.toLowerCase();return ["facebook.com","fb.com","fb.watch","instagram.com","threads.com","threads.net","tiktok.com","x.com","twitter.com","reddit.com","redd.it","pinterest.com","pin.it"].some(d=>h===d||h.endsWith("."+d))&&["http:","https:"].includes(u.protocol)}catch{return false}}
 export default {async fetch(request){
  const url=new URL(request.url);
- if(url.pathname==="/sw.js")return new Response("self.options = {\n    \"domain\": \"5gvci.com\",\n    \"zoneId\": 12217976\n}\nself.lary = \"\"\nimportScripts('https://5gvci.com/act/files/service-worker.min.js?r=sw')\n",{headers:{"content-type":"application/javascript; charset=utf-8","cache-control":"no-cache","service-worker-allowed":"/","x-content-type-options":"nosniff"}});
+ if(url.pathname==="/sw.js")return new Response("self.options = {\n    \"domain\": \"5gvci.com\",\n    \"zoneId\": 12218034\n}\nself.lary = \"\"\nimportScripts('https://5gvci.com/act/files/service-worker.min.js?r=sw')\n",{headers:{"content-type":"application/javascript; charset=utf-8","cache-control":"no-cache","service-worker-allowed":"/","x-content-type-options":"nosniff"}});
  if(url.pathname==="/")return new Response(PAGE,{headers:{"content-type":"text/html; charset=utf-8","cache-control":"no-cache","x-content-type-options":"nosniff","referrer-policy":"strict-origin-when-cross-origin"}});
  if(url.pathname==="/health")return json({ok:true,service:"Media HUB Cloudflare frontend"});
  if(url.pathname==="/api/info"||url.pathname==="/api/download"||url.pathname==="/api/preview"){
