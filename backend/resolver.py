@@ -70,7 +70,7 @@ def ydl_options():
         "fragment_retries": 2,
         "retries": 2,
         "socket_timeout": 20,
-        "extractor_args": {"youtube": {"player_client": ["mweb", "web_safari"]}, "youtubepot-bgutilscript": {"server_home": "/opt/bgutil-ytdlp-pot-provider/server"}},
+        "extractor_args": {"youtube": {"player_client": ["mweb", "tv", "web_safari", "web_embedded"]}, "youtube-bgutilscript": {"server_home": "/opt/bgutil-ytdlp-pot-provider/server"}},
     }
 
 
