@@ -301,6 +301,29 @@ private fun HomeScreen(
 }
 
 @Composable
+private fun VideoPreview(url: String) {
+    val context = LocalContext.current
+    val player = remember(url) { ExoPlayer.Builder(context).build() }
+    LaunchedEffect(url) {
+        if (url.isNotBlank()) {
+            val previewUri = Uri.parse("$BACKEND/preview").buildUpon().appendQueryParameter("url", url).build()
+            player.setMediaItem(PlayerMediaItem.fromUri(previewUri))
+            player.prepare()
+            player.playWhenReady = false
+        }
+    }
+    DisposableEffect(player) { onDispose { player.release() } }
+    Column(Modifier.fillMaxWidth()) {
+        AndroidView(
+            factory = { ctx -> PlayerView(ctx).apply { this.player = player; useController = true; setShowBuffering(PlayerView.SHOW_BUFFERING_WHEN_PLAYING) } },
+            update = { it.player = player },
+            modifier = Modifier.fillMaxWidth().aspectRatio(16f / 9f).background(Color.Black, RoundedCornerShape(16.dp))
+        )
+        Text("Video preview · Tap play", color = Muted, fontSize = 11.sp, modifier = Modifier.padding(top = 5.dp))
+    }
+}
+
+@Composable
 private fun DownloadsScreen(items: List<LocalDownload>, history: Boolean, modifier: Modifier, onOpen: (LocalDownload) -> Unit, onRefresh: () -> Unit) {
     Column(modifier.fillMaxSize().padding(16.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) { Text(if (history) "Download History" else "Downloads", Modifier.weight(1f), fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Ink); IconButton(onClick = onRefresh) { Icon(Icons.Default.Refresh, "Refresh", tint = DeepMint) } }
