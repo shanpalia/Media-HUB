@@ -153,7 +153,10 @@ private fun MainScreen(sharedText: String) {
                         info = loadedInfo
                         message = result.second
                         busy = false
-                        if (loadedInfo != null) mediaMode = "video"
+                        if (loadedInfo != null) {
+                            mediaMode = "video"
+                            selectedVideo = loadedInfo.videos.firstOrNull()
+                        }
                     }
                 },
                 onSelectVideo = { selectedVideo = it; selectedAudio = null; mediaMode = "video" },
@@ -161,7 +164,7 @@ private fun MainScreen(sharedText: String) {
                 onDownload = {
                     val current = info
                     if (current != null) {
-                        val format = if (mediaMode == "audio") current.audioId else selectedVideo?.id
+                        val format = if (mediaMode == "audio") current.audioId else (selectedVideo?.id ?: current.videos.firstOrNull()?.id)
                         if (format.isNullOrBlank()) message = "Please select an available format first."
                         else scope.launch {
                             busy = true
@@ -242,7 +245,7 @@ private fun HomeScreen(
                 Spacer(Modifier.height(10.dp))
                 Button(onClick = onLoad, enabled = !busy && url.isNotBlank(), modifier = Modifier.fillMaxWidth().height(52.dp), shape = RoundedCornerShape(15.dp), colors = ButtonDefaults.buttonColors(containerColor = DeepMint)) {
                     if (busy) CircularProgressIndicator(Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp) else Icon(Icons.Default.Search, null)
-                    Spacer(Modifier.width(8.dp)); Text("Load Video", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                    Spacer(Modifier.width(8.dp)); Text("Get Download Options", fontWeight = FontWeight.Bold, fontSize = 16.sp)
                 }
                 if (message.isNotBlank()) Text(message, Modifier.padding(top = 10.dp), color = DeepMint, fontSize = 12.sp)
             }
@@ -276,7 +279,7 @@ private fun HomeScreen(
                             }
                         }
                     }
-                    Button(onClick = onDownload, enabled = !busy && if (mode == "video") selectedVideo != null else info.audioId != null && selectedAudio != null, modifier = Modifier.fillMaxWidth().height(52.dp), colors = ButtonDefaults.buttonColors(containerColor = Mint), shape = RoundedCornerShape(15.dp)) {
+                    Button(onClick = onDownload, enabled = !busy && if (mode == "video") (selectedVideo != null || info.videos.isNotEmpty()) else info.audioId != null && selectedAudio != null, modifier = Modifier.fillMaxWidth().height(52.dp), colors = ButtonDefaults.buttonColors(containerColor = Mint), shape = RoundedCornerShape(15.dp)) {
                         Icon(Icons.Default.Download, null); Spacer(Modifier.width(8.dp)); Text(if (mode == "audio") "Download MP3" else "Download Video", fontWeight = FontWeight.Bold)
                     }
                 }
