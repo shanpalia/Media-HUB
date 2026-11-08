@@ -151,7 +151,7 @@ private fun MainScreen(sharedText: String) {
                     if (current != null) {
                         val format = if (mediaMode == "audio") current.audioId else selectedVideo?.id
                         if (format.isNullOrBlank()) message = "Please select an available format first."
-                        else {
+                        else scope.launch {
                             busy = true
                             message = withContext(Dispatchers.IO) {
                                 startDownload(context, url, current.title, format, mediaMode, selectedAudio?.bitrate ?: 128)
