@@ -609,12 +609,39 @@ private fun fetchInfo(raw: String): Pair<MediaInfo?, String> {
     val value = raw.trim()
     val platform = detectPlatform(value) ?: return null to "Enter a supported public link from Facebook, Instagram, Threads, TikTok, X, Reddit or Pinterest."
     return try {
-        val client = OkHttpClient.Builder().callTimeout(100, TimeUnit.SECONDS).build()
+        val client = OkHttpClient.Builder()
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(150, TimeUnit.SECONDS)
+            .writeTimeout(30, TimeUnit.SECONDS)
+            .callTimeout(210, TimeUnit.SECONDS)
+            .retryOnConnectionFailure(true)
+            .build()
         val uri = Uri.parse("$BACKEND/info").buildUpon().appendQueryParameter("url", value).build().toString()
-        client.newCall(Request.Builder().url(uri).get().build()).execute().use { response ->
-            val body = response.body?.string().orEmpty()
-            if (!response.isSuccessful) return null to runCatching { JSONObject(body).optString("detail", "Could not read this post.") }.getOrDefault("Could not read this post.")
-            val json = JSONObject(body)
+        var lastNetworkError: Exception? = null
+        var responseBody = ""
+        var httpCode = 0
+        for (attempt in 0 until 3) {
+            try {
+                client.newCall(Request.Builder().url(uri).header("Cache-Control", "no-cache").get().build()).execute().use { response ->
+                    responseBody = response.body?.string().orEmpty()
+                    httpCode = response.code
+                }
+                lastNetworkError = null
+                break
+            } catch (e: java.io.IOException) {
+                lastNetworkError = e
+                if (attempt < 2) Thread.sleep(1500L * (attempt + 1))
+            }
+        }
+        if (lastNetworkError != null) {
+            val detail = lastNetworkError.localizedMessage ?: "Network timeout"
+            return null to "Connection timed out. The video service may be waking up. Please tap Download again in a few seconds. ($detail)"
+        }
+        if (httpCode !in 200..299) {
+            return null to runCatching { JSONObject(responseBody).optString("detail", "Could not read this post.") }.getOrDefault("Could not read this post.")
+        }
+        run {
+            val json = JSONObject(responseBody)
             val videoList = mutableListOf<MediaFormat>()
             val formats = json.optJSONArray("formats")
             if (formats != null) for (i in 0 until formats.length()) {
@@ -641,7 +668,7 @@ private fun fetchInfo(raw: String): Pair<MediaInfo?, String> {
             val duration = json.optDouble("duration", 0.0).toInt()
             MediaInfo(json.optString("title", "Mint Mind video"), json.optString("thumbnail", ""), duration, json.optString("extractor", platform), videoList.distinctBy { it.id }, audioList.distinctBy { it.id }) to "Video found. Choose a format to continue."
         }
-    } catch (e: Exception) { null to "Connection error: ${e.localizedMessage ?: "Please try again."}" }
+    } catch (e: Exception) { null to "Could not load video details: ${e.localizedMessage ?: "Please try again."}" }
 }
 
 private fun startDownload(context: Context, raw: String, title: String, formatId: String, mediaType: String, bitrate: Int): String {
