@@ -520,29 +520,88 @@ private fun SettingsScreen(
     onCheckUpdate: () -> Unit
 ) {
     val context = LocalContext.current
-    Column(modifier.fillMaxSize().padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text("Settings", color = Ink, fontSize = 24.sp, fontWeight = FontWeight.Bold)
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) { Text("Dark appearance", Modifier.weight(1f), color = Ink); Switch(dark, onDark) }
-        HorizontalDivider()
-        Text("App updates", color = Ink, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+    Column(
+        modifier.fillMaxSize().padding(horizontal = 20.dp, vertical = 18.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp)
+    ) {
+        Row(
+            Modifier.fillMaxWidth().padding(vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Image(
+                painterResource(R.drawable.brand_mark),
+                contentDescription = "Mint Mind app icon",
+                modifier = Modifier.size(66.dp)
+            )
+            Spacer(Modifier.width(14.dp))
+            Column(Modifier.weight(1f)) {
+                Text("Mint Mind", color = Ink, fontSize = 25.sp, fontWeight = FontWeight.Black)
+                Text("SETTINGS & APP PREFERENCES", color = DeepMint, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.1.sp)
+                Text("BY PALIAAPK HUB", color = Muted, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.2.sp)
+            }
+        }
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Text("Dark appearance", Modifier.weight(1f), color = Ink, fontSize = 16.sp)
+            Switch(dark, onDark)
+        }
+        HorizontalDivider(color = Color(0xFFDCE8E1))
+        Text("App updates", color = Ink, fontSize = 19.sp, fontWeight = FontWeight.Bold)
         Text("Current version: ${BuildConfig.VERSION_NAME}", color = Muted, fontSize = 13.sp)
-        Button(onClick = onCheckUpdate, enabled = !updateBusy, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = DeepMint)) {
+        Button(
+            onClick = onCheckUpdate,
+            enabled = !updateBusy,
+            modifier = Modifier.fillMaxWidth().height(52.dp),
+            shape = RoundedCornerShape(18.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = DeepMint)
+        ) {
             if (updateBusy) CircularProgressIndicator(Modifier.size(18.dp), color = Color.White, strokeWidth = 2.dp)
             else Icon(Icons.Default.Refresh, null)
-            Spacer(Modifier.width(8.dp)); Text(if (updateBusy) "Checking…" else "Check for updates")
+            Spacer(Modifier.width(8.dp))
+            Text(if (updateBusy) "Checking…" else "Check for updates", fontWeight = FontWeight.Bold)
         }
         Text(updateMessage, color = DeepMint, fontSize = 13.sp)
         if (availableUpdate != null) {
             Text("New version: ${availableUpdate.versionName}", color = Ink, fontWeight = FontWeight.Bold)
             if (availableUpdate.changelog.isNotBlank()) Text(availableUpdate.changelog, color = Muted, fontSize = 12.sp)
-            Button(onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(availableUpdate.downloadUrl))) }, modifier = Modifier.fillMaxWidth()) {
-                Icon(Icons.Default.Download, null); Spacer(Modifier.width(8.dp)); Text("Download update")
+            Button(
+                onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(availableUpdate.downloadUrl))) },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(Icons.Default.Download, null)
+                Spacer(Modifier.width(8.dp))
+                Text("Download update")
             }
         }
-        HorizontalDivider()
-        Text("BY PALIAAPK HUB", color = DeepMint, fontWeight = FontWeight.Bold)
-        Text("Developer by ShanPalia", color = Muted, fontSize = 12.sp)
-        Text("Downloads are saved in Movies/Mint Mind.", color = Ink)
+        Surface(
+            modifier = Modifier.fillMaxWidth().clickable {
+                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://paliaapkhub.com")))
+            },
+            color = PaleMint,
+            shape = RoundedCornerShape(22.dp),
+            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFD3F1E5))
+        ) {
+            Row(
+                Modifier.fillMaxWidth().padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Image(
+                    painterResource(R.drawable.brand_mark),
+                    contentDescription = "PaliaAPK HUB logo",
+                    modifier = Modifier.size(58.dp)
+                )
+                Spacer(Modifier.width(13.dp))
+                Column(Modifier.weight(1f)) {
+                    Text("More Apps & Games", color = Ink, fontSize = 17.sp, fontWeight = FontWeight.ExtraBold)
+                    Text("Discover more apps from", color = Muted, fontSize = 12.sp)
+                    Text("PaliaAPK HUB", color = DeepMint, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                }
+                Icon(Icons.Default.ArrowForwardIos, contentDescription = "Open PaliaAPK HUB", tint = DeepMint)
+            }
+        }
+        HorizontalDivider(color = Color(0xFFDCE8E1))
+        Text("BY PALIAAPK HUB", color = DeepMint, fontWeight = FontWeight.ExtraBold, fontSize = 16.sp)
+        Text("Developer by ShanPalia", color = Muted, fontSize = 13.sp)
+        Text("Downloads are saved in Movies/Mint Mind.", color = Ink, fontSize = 14.sp)
     }
 }
 
