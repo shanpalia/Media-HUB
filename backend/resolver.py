@@ -139,7 +139,7 @@ def info(url: str = Query(..., min_length=8, max_length=2048)):
                 audio_size = int(abr * duration * 1000 / 8) if abr and duration else None
                 has_audio = f.get("acodec") != "none"
                 estimated_total = estimated_video_size + (audio_size or 0) if estimated_video_size and has_audio else estimated_video_size
-                if not resolution_label or not estimated_total:
+                if not resolution_label:
                     continue
                 formats.append({
                     "format_id": fmt_id, "ext": ext, "height": height,
