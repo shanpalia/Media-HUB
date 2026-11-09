@@ -11,6 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from starlette.background import BackgroundTask
 import shutil
+import time
 
 app = FastAPI(title="Media HUB Resolver", version="1.1.0")
 app.add_middleware(
@@ -66,11 +67,33 @@ def ydl_options():
         "no_warnings": True,
         "noplaylist": True,
         "skip_download": True,
-        "extractor_retries": 2,
-        "fragment_retries": 2,
-        "retries": 2,
-        "socket_timeout": 20,
+        "extractor_retries": 4,
+        "fragment_retries": 4,
+        "retries": 4,
+        "socket_timeout": 35,
     }
+
+
+
+def extract_info_with_retries(url: str):
+    """Retry short-lived upstream timeouts/rate limits before returning an error."""
+    last_error = None
+    for attempt in range(3):
+        try:
+            with yt_dlp.YoutubeDL(ydl_options()) as ydl:
+                return ydl.extract_info(url, download=False)
+        except Exception as exc:
+            last_error = exc
+            message = str(exc).lower()
+            retryable = any(token in message for token in (
+                "timed out", "timeout", "temporary", "connection reset",
+                "connection aborted", "502", "503", "504", "429",
+                "remote end closed", "network is unreachable",
+            ))
+            if not retryable or attempt == 2:
+                raise
+            time.sleep(1.5 * (attempt + 1))
+    raise last_error
 
 
 def safe_filename(title: str) -> str:
@@ -87,8 +110,7 @@ def health():
 def info(url: str = Query(..., min_length=8, max_length=2048)):
     url = resolve_redirect(validate_url(url))
     try:
-        with yt_dlp.YoutubeDL(ydl_options()) as ydl:
-            data = ydl.extract_info(url, download=False)
+        data = extract_info_with_retries(url)
         if not data:
             raise HTTPException(422, "Could not read this public video")
 
@@ -143,6 +165,28 @@ def info(url: str = Query(..., min_length=8, max_length=2048)):
                 unique_formats[key] = item
         formats = list(unique_formats.values())
         formats.sort(key=lambda x: (x.get("height") or 0, x["format_id"]), reverse=True)
+
+        # Present the standard quality choices when the source actually provides
+        # a stream at or below that resolution. Each choice downloads a real
+        # source format; no unsupported resolution is fabricated.
+        quality_formats = []
+        used_ids = set()
+        for target_height in (144, 240, 480, 720):
+            candidates = [f for f in formats if f.get("height") and f["height"] <= target_height]
+            if not candidates:
+                continue
+            chosen = max(candidates, key=lambda f: (f["height"], f.get("filesize") or 0))
+            if chosen["format_id"] in used_ids:
+                continue
+            used_ids.add(chosen["format_id"])
+            item = dict(chosen)
+            actual_height = chosen["height"]
+            item["source_height"] = actual_height
+            item["height"] = target_height
+            item["label"] = (f"{target_height}p" if actual_height == target_height
+                             else f"Up to {target_height}p (source {actual_height}p)")
+            quality_formats.append(item)
+
         audio_formats.sort(key=lambda x: (x.get("abr") or 0, x["format_id"]), reverse=True)
         return {
             "ok": True,
@@ -150,7 +194,7 @@ def info(url: str = Query(..., min_length=8, max_length=2048)):
             "thumbnail": data.get("thumbnail"),
             "duration": data.get("duration"),
             "extractor": data.get("extractor_key"),
-            "formats": formats[:20],
+            "formats": quality_formats or formats[:20],
             "audio_formats": audio_formats[:20],
         }
     except HTTPException:
@@ -165,8 +209,7 @@ def preview(url: str = Query(..., min_length=8, max_length=2048)):
     """Return a playable direct media URL for the in-page HTML5 preview."""
     url = resolve_redirect(validate_url(url))
     try:
-        with yt_dlp.YoutubeDL(ydl_options()) as ydl:
-            data = ydl.extract_info(url, download=False)
+        data = extract_info_with_retries(url)
         if not data:
             raise HTTPException(422, "Preview is unavailable for this video")
         formats = data.get("formats", [])
@@ -197,8 +240,7 @@ def download(
         raise HTTPException(400, "Invalid video quality selection")
 
     try:
-        with yt_dlp.YoutubeDL(ydl_options()) as ydl:
-            data = ydl.extract_info(url, download=False)
+        data = extract_info_with_retries(url)
         title = safe_filename(data.get("title") or "Mint-Mind-video")
         if media_type == "audio":
             allowed = {str(f.get("format_id")) for f in data.get("formats", []) if f.get("url") and f.get("acodec") != "none"}
