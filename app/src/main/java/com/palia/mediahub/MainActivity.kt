@@ -5,6 +5,11 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.os.Build
+import android.content.pm.PackageManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 import android.graphics.Color as AndroidColor
 import androidx.core.view.WindowCompat
 import android.os.Environment
@@ -51,6 +56,7 @@ import org.json.JSONObject
 import java.util.concurrent.TimeUnit
 
 private const val BACKEND = "https://media-hub-resolver.onrender.com"
+private const val UPDATE_MANIFEST_URL = "https://paliaapkhub.com/mint-mind-version.json"
 private val Mint = Color(0xFF00A979)
 private val DeepMint = Color(0xFF006B50)
 private val PaleMint = Color(0xFFE8FFF7)
@@ -67,6 +73,7 @@ private data class MediaInfo(
     val audioFormats: List<AudioChoice>
 )
 private data class AudioChoice(val id: String, val bitrate: Int, val label: String, val size: Long?)
+private data class AppUpdate(val versionName: String, val versionCode: Int, val downloadUrl: String, val changelog: String)
 private data class LocalDownload(val id: Long, val title: String, val state: String, val uri: Uri?, val downloaded: Long = 0L, val total: Long = -1L)
 
 class MainActivity : ComponentActivity() {
@@ -128,6 +135,15 @@ private fun MainScreen(sharedText: String) {
     var renameTarget by remember { mutableStateOf<LocalDownload?>(null) }
     var renameText by remember { mutableStateOf("") }
     var actionMessage by remember { mutableStateOf("") }
+    var updateBusy by remember { mutableStateOf(false) }
+    var updateMessage by remember { mutableStateOf("Tap Check for updates to check PaliaAPK HUB.") }
+    var availableUpdate by remember { mutableStateOf<AppUpdate?>(null) }
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
+    LaunchedEffect(Unit) {
+        if (Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(context, android.Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+            notificationPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+        }
+    }
 
     fun refresh() { downloads = readDownloads(context) }
     fun resetResult() { info = null; selectedVideo = null; selectedAudio = null; message = "" }
@@ -196,7 +212,21 @@ private fun MainScreen(sharedText: String) {
                 onRefresh = { refresh() }
             )
             "Player" -> PlayerScreen(downloads, selectedFile, Modifier.padding(padding), onSelect = { selectedFile = it })
-            else -> SettingsScreen(dark, { dark = it }, Modifier.padding(padding))
+            else -> SettingsScreen(
+                dark, { dark = it }, Modifier.padding(padding),
+                updateBusy, updateMessage, availableUpdate,
+                onCheckUpdate = {
+                    scope.launch {
+                        updateBusy = true
+                        updateMessage = "Checking PaliaAPK HUB for updates…"
+                        availableUpdate = null
+                        val result = withContext(Dispatchers.IO) { checkForAppUpdate(context) }
+                        availableUpdate = result.first
+                        updateMessage = result.second
+                        updateBusy = false
+                    }
+                }
+            )
         }
         if (overwriteTarget != null) {
             AlertDialog(
@@ -482,16 +512,35 @@ private fun PlayerScreen(items: List<LocalDownload>, selected: LocalDownload?, m
 }
 
 @Composable
-private fun SettingsScreen(dark: Boolean, onDark: (Boolean) -> Unit, modifier: Modifier) {
-    Column(modifier.fillMaxSize().padding(20.dp)) {
+private fun SettingsScreen(
+    dark: Boolean, onDark: (Boolean) -> Unit, modifier: Modifier,
+    updateBusy: Boolean, updateMessage: String, availableUpdate: AppUpdate?,
+    onCheckUpdate: () -> Unit
+) {
+    val context = LocalContext.current
+    Column(modifier.fillMaxSize().padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text("Settings", color = Ink, fontSize = 24.sp, fontWeight = FontWeight.Bold)
-        Spacer(Modifier.height(15.dp))
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) { Text("Dark appearance", Modifier.weight(1f), color = Ink); Switch(dark, onDark) }
         HorizontalDivider()
-        Text("Mint Mind · Version 1.0.0", Modifier.padding(top = 16.dp), color = Muted)
-        Text("BY PALIAAPK HUB", Modifier.padding(top = 8.dp), color = DeepMint, fontWeight = FontWeight.Bold)
+        Text("App updates", color = Ink, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+        Text("Current version: ${BuildConfig.VERSION_NAME}", color = Muted, fontSize = 13.sp)
+        Button(onClick = onCheckUpdate, enabled = !updateBusy, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = DeepMint)) {
+            if (updateBusy) CircularProgressIndicator(Modifier.size(18.dp), color = Color.White, strokeWidth = 2.dp)
+            else Icon(Icons.Default.Refresh, null)
+            Spacer(Modifier.width(8.dp)); Text(if (updateBusy) "Checking…" else "Check for updates")
+        }
+        Text(updateMessage, color = DeepMint, fontSize = 13.sp)
+        if (availableUpdate != null) {
+            Text("New version: ${availableUpdate.versionName}", color = Ink, fontWeight = FontWeight.Bold)
+            if (availableUpdate.changelog.isNotBlank()) Text(availableUpdate.changelog, color = Muted, fontSize = 12.sp)
+            Button(onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(availableUpdate.downloadUrl))) }, modifier = Modifier.fillMaxWidth()) {
+                Icon(Icons.Default.Download, null); Spacer(Modifier.width(8.dp)); Text("Download update")
+            }
+        }
+        HorizontalDivider()
+        Text("BY PALIAAPK HUB", color = DeepMint, fontWeight = FontWeight.Bold)
         Text("Developer by ShanPalia", color = Muted, fontSize = 12.sp)
-        Text("Downloads are saved in Movies/Mint Mind.", Modifier.padding(top = 18.dp), color = Ink)
+        Text("Downloads are saved in Movies/Mint Mind.", color = Ink)
     }
 }
 
@@ -657,3 +706,28 @@ private fun BrandPlatformIcon(name: String, modifier: Modifier = Modifier) {
     }
 }
 private fun formatBytes(bytes: Long): String = if (bytes < 1024L * 1024L) "${bytes / 1024} KB" else String.format("%.1f MB", bytes / 1024.0 / 1024.0)
+
+
+private fun checkForAppUpdate(context: Context): Pair<AppUpdate?, String> {
+    return try {
+        val request = Request.Builder().url(UPDATE_MANIFEST_URL).header("Cache-Control", "no-cache").build()
+        OkHttpClient.Builder().callTimeout(20, TimeUnit.SECONDS).build().newCall(request).execute().use { response ->
+            if (!response.isSuccessful) return null to "Could not check updates right now. Please try again later."
+            val json = JSONObject(response.body?.string().orEmpty())
+            val latestCode = json.optInt("versionCode", 0)
+            val latestName = json.optString("versionName", "")
+            val downloadUrl = json.optString("downloadUrl", "")
+            if (latestCode <= 0 || latestName.isBlank() || !downloadUrl.startsWith("https://")) {
+                return null to "Update information on PaliaAPK HUB is incomplete."
+            }
+            val currentCode = BuildConfig.VERSION_CODE
+            if (latestCode > currentCode) {
+                AppUpdate(latestName, latestCode, downloadUrl, json.optString("changelog", "")) to "A new update is available."
+            } else {
+                null to "You are up to date. Mint Mind ${BuildConfig.VERSION_NAME} is the latest version."
+            }
+        }
+    } catch (_: Exception) {
+        null to "Unable to connect to paliaapkhub.com. Check your internet and try again."
+    }
+}
