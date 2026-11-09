@@ -176,7 +176,22 @@ export default {async fetch(request){
   const endpoint=url.pathname==="/api/info"?"/info":(url.pathname==="/api/preview"?"/preview":"/download");
   const params=new URLSearchParams(url.searchParams);params.delete("url");params.set("url",target);
   try{
-   const upstream=await fetch(BACKEND+endpoint+"?"+params.toString(),{headers:{"Accept":request.headers.get("Accept")||"*/*"}});
+   const upstreamUrl=BACKEND+endpoint+"?"+params.toString();
+   const requestHeaders={"Accept":request.headers.get("Accept")||"*/*"};
+   let upstream=null;
+   // Render's free instance can sleep between visits. Retry transient HTML/5xx
+   // wake-up responses on /info instead of passing HTML into the page's JSON parser.
+   const attempts=url.pathname==="/api/info"?6:1;
+   for(let attempt=0;attempt<attempts;attempt++){
+    upstream=await fetch(upstreamUrl,{headers:requestHeaders});
+    const contentType=(upstream.headers.get("content-type")||"").toLowerCase();
+    const transient=upstream.status===502||upstream.status===503||upstream.status===504||contentType.includes("text/html");
+    if(!transient||attempt===attempts-1)break;
+    await new Promise(resolve=>setTimeout(resolve,5000));
+   }
+   if(url.pathname==="/api/info"&&((upstream.headers.get("content-type")||"").toLowerCase().includes("text/html"))){
+    return json({ok:false,detail:"The media service is starting. Please wait a few seconds and try again."},503);
+   }
    const headers=new Headers(upstream.headers);headers.set("cache-control","no-store");headers.set("x-content-type-options","nosniff");
    return new Response(upstream.body,{status:upstream.status,statusText:upstream.statusText,headers});
   }catch{return json({detail:"Media service is temporarily unavailable. Please retry shortly."},502)}
