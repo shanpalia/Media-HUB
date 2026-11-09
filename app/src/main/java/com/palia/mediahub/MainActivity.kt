@@ -720,25 +720,41 @@ private fun formatBytes(bytes: Long): String = if (bytes < 1024L * 1024L) "${byt
 
 
 private fun checkForAppUpdate(context: Context): Pair<AppUpdate?, String> {
-    return try {
-        val request = Request.Builder().url(UPDATE_MANIFEST_URL).header("Cache-Control", "no-cache").build()
-        OkHttpClient.Builder().callTimeout(20, TimeUnit.SECONDS).build().newCall(request).execute().use { response ->
-            if (!response.isSuccessful) return null to "Could not check updates right now. Please try again later."
-            val json = JSONObject(response.body?.string().orEmpty())
-            val latestCode = json.optInt("versionCode", 0)
-            val latestName = json.optString("versionName", "")
-            val downloadUrl = json.optString("downloadUrl", "")
-            if (latestCode <= 0 || latestName.isBlank() || !downloadUrl.startsWith("https://")) {
-                return null to "Update information on PaliaAPK HUB is incomplete."
+    val manifestUrls = listOf(
+        UPDATE_MANIFEST_URL,
+        "https://raw.githubusercontent.com/shanpalia/WebsitePaliaAPK_V.2/main/mint-mind-version.json"
+    )
+    val client = OkHttpClient.Builder().callTimeout(20, TimeUnit.SECONDS).build()
+    var lastFailure = "Update server is not reachable."
+    for (manifestUrl in manifestUrls) {
+        try {
+            val request = Request.Builder()
+                .url(manifestUrl)
+                .header("Cache-Control", "no-cache")
+                .header("Pragma", "no-cache")
+                .build()
+            client.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) {
+                    lastFailure = "Server returned HTTP ${response.code}."
+                    return@use
+                }
+                val json = JSONObject(response.body?.string().orEmpty())
+                val latestCode = json.optInt("versionCode", 0)
+                val latestName = json.optString("versionName", "")
+                val downloadUrl = json.optString("downloadUrl", "")
+                if (latestCode <= 0 || latestName.isBlank() || !downloadUrl.startsWith("https://")) {
+                    lastFailure = "Update information is incomplete."
+                    return@use
+                }
+                val currentCode = BuildConfig.VERSION_CODE
+                if (latestCode > currentCode) {
+                    return AppUpdate(latestName, latestCode, downloadUrl, json.optString("changelog", "")) to "A new update is available."
+                }
+                return null to "You are up to date. Mint Mind ${BuildConfig.VERSION_NAME} is the latest version."
             }
-            val currentCode = BuildConfig.VERSION_CODE
-            if (latestCode > currentCode) {
-                AppUpdate(latestName, latestCode, downloadUrl, json.optString("changelog", "")) to "A new update is available."
-            } else {
-                null to "You are up to date. Mint Mind ${BuildConfig.VERSION_NAME} is the latest version."
-            }
+        } catch (e: Exception) {
+            lastFailure = e.localizedMessage ?: "Connection failed."
         }
-    } catch (_: Exception) {
-        null to "Unable to connect to paliaapkhub.com. Check your internet and try again."
     }
+    return null to "Unable to check updates: $lastFailure Please check your internet and try again."
 }
