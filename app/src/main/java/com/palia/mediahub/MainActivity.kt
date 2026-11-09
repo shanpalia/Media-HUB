@@ -138,11 +138,22 @@ private fun MainScreen(sharedText: String) {
     var updateBusy by remember { mutableStateOf(false) }
     var updateMessage by remember { mutableStateOf("Tap Check for updates to check PaliaAPK HUB.") }
     var availableUpdate by remember { mutableStateOf<AppUpdate?>(null) }
-    val notificationPermissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
+    val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { }
     LaunchedEffect(Unit) {
-        if (Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(context, android.Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
-            notificationPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+        val requiredPermissions = buildList {
+            if (Build.VERSION.SDK_INT >= 33) {
+                add(android.Manifest.permission.READ_MEDIA_VIDEO)
+                add(android.Manifest.permission.READ_MEDIA_AUDIO)
+                if (Build.VERSION.SDK_INT >= 34) add(android.Manifest.permission.READ_MEDIA_VISUAL_USER_SELECTED)
+                add(android.Manifest.permission.POST_NOTIFICATIONS)
+            } else {
+                add(android.Manifest.permission.READ_EXTERNAL_STORAGE)
+            }
         }
+        val missingPermissions = requiredPermissions.filter {
+            ContextCompat.checkSelfPermission(context, it) != PackageManager.PERMISSION_GRANTED
+        }
+        if (missingPermissions.isNotEmpty()) permissionLauncher.launch(missingPermissions.toTypedArray())
     }
 
     fun refresh() { downloads = readDownloads(context) }
@@ -393,15 +404,15 @@ private fun HomeScreen(
                 }
             }
         }
-        item {
-            Column(Modifier.padding(horizontal = 14.dp).background(Color.White, RoundedCornerShape(20.dp)).padding(15.dp)) {
-                Text("How it works", fontSize = 17.sp, color = Ink, fontWeight = FontWeight.Bold)
-                Text("1. Copy a public video link\n2. Paste it and tap Load Video\n3. Choose audio or video quality\n4. Download and play from the app", color = Muted, fontSize = 13.sp, lineHeight = 22.sp)
+        if (downloads.isNotEmpty()) {
+            item {
+                Row(Modifier.fillMaxWidth().padding(horizontal = 18.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text("Recent downloads", Modifier.weight(1f), color = Ink, fontWeight = FontWeight.Bold, fontSize = 17.sp)
+                    Text("View all  ›", Modifier.clickable { onAll() }, color = DeepMint, fontWeight = FontWeight.Bold)
+                }
             }
+            items(downloads.take(3), key = { it.id }) { DownloadRow(it) }
         }
-        item { Row(Modifier.fillMaxWidth().padding(horizontal = 18.dp), verticalAlignment = Alignment.CenterVertically) { Text("Recent downloads", Modifier.weight(1f), color = Ink, fontWeight = FontWeight.Bold, fontSize = 17.sp); Text("View all  ›", Modifier.clickable { onAll() }, color = DeepMint, fontWeight = FontWeight.Bold) } }
-        if (downloads.isEmpty()) item { Text("Your downloaded files will appear here.", Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = Muted, fontSize = 12.sp) }
-        else items(downloads.take(3), key = { it.id }) { DownloadRow(it) }
         item { Text("Only download content you own or have permission to save. Platform restrictions may apply.", Modifier.padding(horizontal = 18.dp), color = Muted, fontSize = 10.sp) }
     }
 }
