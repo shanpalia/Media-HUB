@@ -30,15 +30,26 @@ ALLOWED_HOST_SUFFIXES = (
 
 def validate_url(raw: str) -> str:
     try:
-        parsed = urllib.parse.urlparse(raw.strip())
+        candidate = raw.strip()
+        parsed = urllib.parse.urlparse(candidate)
         host = (parsed.hostname or "").lower()
+
+        # Facebook sometimes replaces a copied Story permalink with a login
+        # redirect. Unwrap its "next" parameter before sending it to yt-dlp.
+        if host in ("facebook.com", "www.facebook.com", "m.facebook.com") and parsed.path.rstrip("/").lower() == "/login.php":
+            params = urllib.parse.parse_qs(parsed.query)
+            nested = (params.get("next") or params.get("redirect_uri") or [""])[0]
+            if nested:
+                candidate = urllib.parse.unquote(nested).strip()
+                parsed = urllib.parse.urlparse(candidate)
+                host = (parsed.hostname or "").lower()
     except Exception:
         raise HTTPException(400, "Invalid URL")
     if parsed.scheme not in ("http", "https") or not host:
         raise HTTPException(400, "Please provide a valid public http/https URL")
     if not any(host == d or host.endswith("." + d) for d in ALLOWED_HOST_SUFFIXES):
         raise HTTPException(400, "This platform is not supported yet")
-    return raw.strip()
+    return candidate
 
 
 def resolve_redirect(raw: str) -> str:
