@@ -1,5 +1,5 @@
 fastapi==0.115.12
 uvicorn[standard]==0.34.2
-yt-dlp
+yt-dlp @ git+https://github.com/yt-dlp/yt-dlp.git@master
 yt-dlp-threads @ git+https://github.com/tribixbite/yt-dlp-threads.git
 bgutil-ytdlp-pot-provider
