@@ -404,15 +404,6 @@ private fun HomeScreen(
                 }
             }
         }
-        if (downloads.isNotEmpty()) {
-            item {
-                Row(Modifier.fillMaxWidth().padding(horizontal = 18.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text("Recent downloads", Modifier.weight(1f), color = Ink, fontWeight = FontWeight.Bold, fontSize = 17.sp)
-                    Text("View all  ›", Modifier.clickable { onAll() }, color = DeepMint, fontWeight = FontWeight.Bold)
-                }
-            }
-            items(downloads.take(3), key = { it.id }) { DownloadRow(it) }
-        }
         item { Text("Only download content you own or have permission to save. Platform restrictions may apply.", Modifier.padding(horizontal = 18.dp), color = Muted, fontSize = 10.sp) }
     }
 }
