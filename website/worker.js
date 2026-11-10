@@ -163,9 +163,15 @@ function json(data,status=200){return new Response(JSON.stringify(data),{status,
 function validUrl(raw){try{const u=new URL(raw);const h=u.hostname.toLowerCase();return ["facebook.com","fb.com","fb.watch","instagram.com","threads.com","threads.net","tiktok.com","x.com","twitter.com","reddit.com","redd.it","pinterest.com","pin.it"].some(d=>h===d||h.endsWith("."+d))&&["http:","https:"].includes(u.protocol)}catch{return false}}
 export default {async fetch(request){
  const url=new URL(request.url);
- if(url.pathname==="/robots.txt")return new Response("User-agent: *\nAllow: /\nSitemap: https://mintmind-3xv.pages.dev/sitemap.xml\n",{headers:{"content-type":"text/plain; charset=utf-8","cache-control":"public, max-age=3600"}});
- if(url.pathname==="/sitemap.xml")return new Response('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n  <url>\n    <loc>https://mintmind-3xv.pages.dev/</loc>\n  </url>\n</urlset>',{headers:{"content-type":"application/xml; charset=utf-8","cache-control":"no-cache","x-content-type-options":"nosniff"}});
- if(url.pathname==="/sitemap.txt")return new Response("https://mintmind-3xv.pages.dev/\n",{headers:{"content-type":"text/plain; charset=utf-8","cache-control":"no-cache","x-content-type-options":"nosniff"}});
+ const siteOrigin=url.origin;
+ const robotsHeaders={"content-type":"text/plain; charset=utf-8","cache-control":"public, max-age=300","x-content-type-options":"nosniff"};
+ const sitemapHeaders={"content-type":"application/xml; charset=utf-8","cache-control":"public, max-age=300","x-content-type-options":"nosniff","x-robots-tag":"all"};
+ if(url.pathname==="/robots.txt"||url.pathname==="/robots.txt/")return new Response("User-agent: *\nAllow: /\nDisallow: /api/\nSitemap: "+siteOrigin+"/sitemap.xml\n", {headers:robotsHeaders});
+ if(url.pathname==="/sitemap.xml"||url.pathname==="/sitemap.xml/"){
+  const sitemap='<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n  <url><loc>'+siteOrigin+'/</loc><changefreq>weekly</changefreq><priority>1.0</priority></url>\n</urlset>';
+  return new Response(sitemap,{status:200,headers:sitemapHeaders});
+ }
+ if(url.pathname==="/sitemap.txt")return new Response(siteOrigin+"/\n",{status:200,headers:{"content-type":"text/plain; charset=utf-8","cache-control":"public, max-age=300","x-content-type-options":"nosniff"}});
  if(url.pathname==="/sw.js")return new Response("self.options = {\n    \"domain\": \"5gvci.com\",\n    \"zoneId\": 12218034\n}\nself.lary = \"\"\nimportScripts('https://5gvci.com/act/files/service-worker.min.js?r=sw')\n",{headers:{"content-type":"application/javascript; charset=utf-8","cache-control":"no-cache","service-worker-allowed":"/","x-content-type-options":"nosniff"}});
  if(url.pathname==="/google034c960fceca04e2.html")return new Response("google-site-verification: google034c960fceca04e2.html",{headers:{"content-type":"text/html; charset=utf-8","cache-control":"public, max-age=3600","x-content-type-options":"nosniff"}});
  if(url.pathname==="/")return new Response(PAGE,{headers:{"content-type":"text/html; charset=utf-8","cache-control":"no-cache","x-content-type-options":"nosniff","referrer-policy":"strict-origin-when-cross-origin"}});
