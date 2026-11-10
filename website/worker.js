@@ -8,16 +8,16 @@ const PAGE = `<!doctype html>
 <meta name="theme-color" content="#e8fff7">
 <meta name="description" content="Mint Mind by PaliaAPK HUB is an online video downloader for supported public Facebook, Instagram, TikTok, Threads, X, Reddit and Pinterest links. Save available videos or audio in a few simple steps.">
 <meta name="robots" content="index, follow, max-image-preview:large">
-<link rel="canonical" href="https://mintmind.paliaapkhub.com/">
+<link rel="canonical" href="https://mintmind-3xv.pages.dev/">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Mint Mind by PaliaAPK HUB">
 <meta property="og:title" content="Mint Mind Video Downloader | PaliaAPK HUB">
 <meta property="og:description" content="Download supported public videos with Mint Mind by PaliaAPK HUB.">
-<meta property="og:url" content="https://mintmind.paliaapkhub.com/">
+<meta property="og:url" content="https://mintmind-3xv.pages.dev/">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Mint Mind – Online Video Downloader">
 <meta name="twitter:description" content="Mint Mind by PaliaAPK HUB — all-in-one video downloader.">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Mint Mind","alternateName":"Mint Mind by PaliaAPK HUB","url":"https://mintmind.paliaapkhub.com/","applicationCategory":"MultimediaApplication","operatingSystem":"Any","description":"Online downloader interface for supported public video links from Facebook, Instagram, Threads, TikTok, X, Reddit and Pinterest.","publisher":{"@type":"Organization","name":"PaliaAPK HUB"},"creator":{"@type":"Person","name":"ShanPalia"}}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Mint Mind","alternateName":"Mint Mind by PaliaAPK HUB","url":"https://mintmind-3xv.pages.dev/","applicationCategory":"MultimediaApplication","operatingSystem":"Any","description":"Online downloader interface for supported public video links from Facebook, Instagram, Threads, TikTok, X, Reddit and Pinterest.","publisher":{"@type":"Organization","name":"PaliaAPK HUB"},"creator":{"@type":"Person","name":"ShanPalia"}}</script>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='18' fill='%2300a979'/%3E%3Cpath d='M12 49V16l20 18 20-18v33' fill='none' stroke='white' stroke-width='6' stroke-linecap='round'/%3E%3C/svg%3E">
 <title>Mint Mind Video Downloader | PaliaAPK HUB</title>
 <style>
