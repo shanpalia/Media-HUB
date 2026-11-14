@@ -168,8 +168,9 @@ export default {async fetch(request){
  const sitemapHeaders={"content-type":"application/xml; charset=utf-8","cache-control":"public, max-age=300","x-content-type-options":"nosniff","x-robots-tag":"all"};
  if(url.pathname==="/robots.txt"||url.pathname==="/robots.txt/")return new Response("User-agent: *\nAllow: /\nDisallow: /api/\nSitemap: "+siteOrigin+"/sitemap.xml\n", {headers:robotsHeaders});
  if(url.pathname==="/sitemap.xml"||url.pathname==="/sitemap.xml/"){
+  if(request.method!=="GET"&&request.method!=="HEAD")return new Response("Method not allowed",{status:405,headers:{...sitemapHeaders,"allow":"GET, HEAD"}});
   const sitemap='<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n  <url><loc>'+siteOrigin+'/</loc><changefreq>weekly</changefreq><priority>1.0</priority></url>\n</urlset>';
-  return new Response(sitemap,{status:200,headers:sitemapHeaders});
+  return new Response(request.method==="HEAD"?null:sitemap,{status:200,headers:sitemapHeaders});
  }
  if(url.pathname==="/sitemap.txt")return new Response(siteOrigin+"/\n",{status:200,headers:{"content-type":"text/plain; charset=utf-8","cache-control":"public, max-age=300","x-content-type-options":"nosniff"}});
  if(url.pathname==="/sw.js")return new Response("self.options = {\n    \"domain\": \"5gvci.com\",\n    \"zoneId\": 12218034\n}\nself.lary = \"\"\nimportScripts('https://5gvci.com/act/files/service-worker.min.js?r=sw')\n",{headers:{"content-type":"application/javascript; charset=utf-8","cache-control":"no-cache","service-worker-allowed":"/","x-content-type-options":"nosniff"}});
