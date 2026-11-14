@@ -163,7 +163,7 @@ function json(data,status=200){return new Response(JSON.stringify(data),{status,
 function validUrl(raw){try{const u=new URL(raw);const h=u.hostname.toLowerCase();return ["facebook.com","fb.com","fb.watch","instagram.com","threads.com","threads.net","tiktok.com","x.com","twitter.com","reddit.com","redd.it","pinterest.com","pin.it"].some(d=>h===d||h.endsWith("."+d))&&["http:","https:"].includes(u.protocol)}catch{return false}}
 export default {async fetch(request){
  const url=new URL(request.url);
- const siteOrigin=url.origin;
+ const siteOrigin="https://mintmind-3xv.pages.dev";
  const robotsHeaders={"content-type":"text/plain; charset=utf-8","cache-control":"public, max-age=300","x-content-type-options":"nosniff"};
  const sitemapHeaders={"content-type":"application/xml; charset=utf-8","cache-control":"public, max-age=300","x-content-type-options":"nosniff","x-robots-tag":"all"};
  if(url.pathname==="/robots.txt"||url.pathname==="/robots.txt/")return new Response("User-agent: *\nAllow: /\nDisallow: /api/\nSitemap: "+siteOrigin+"/sitemap.xml\n", {headers:robotsHeaders});
